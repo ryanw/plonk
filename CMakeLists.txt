@@ -4,5 +4,7 @@ project(plonk VERSION 0.0.1 LANGUAGES CXX)
 
 include(CTest)
 
-add_subdirectory(libs)
 add_subdirectory(app)
+add_subdirectory(libs)
+
+add_subdirectory(vendor/glfw)

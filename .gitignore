@@ -33,3 +33,6 @@
 
 # Folders
 build/*
+
+# LSP cache
+.ccls-cache/
