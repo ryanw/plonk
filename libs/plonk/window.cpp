@@ -7,7 +7,10 @@ Window::Window(int width, int height) {
 		return;
 	}
 
-	inner = glfwCreateWindow(1024, 768, "Plonker", NULL, NULL);
+	glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	inner = glfwCreateWindow(1024, 768, "Plonk", NULL, NULL);
+
 	if (!inner) {
 		std::cout << "Error creating window\n";
 		glfwTerminate();
@@ -16,3 +19,15 @@ Window::Window(int width, int height) {
 
 	std::cout << "Finished Plonk\n";
 }
+
+void Window::run(std::function<void(Event)> callback) {
+	while (!glfwWindowShouldClose(inner)) {
+		glfwPollEvents();
+		Event event = DrawEvent{.dt = 1.0 / 60.0};
+		callback(event);
+	}
+
+	glfwTerminate();
+}
+
+Window::~Window() { glfwTerminate(); }

@@ -7,7 +7,7 @@ add_library(${PROJECT_NAME}
 	renderer.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} glfw)
+target_link_libraries(${PROJECT_NAME} glfw vulkan X11)
 
 add_library(libs::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 

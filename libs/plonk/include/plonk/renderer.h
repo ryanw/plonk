@@ -1,9 +1,11 @@
 #pragma once
 
-class Renderer {
-  public:
-	Renderer();
+#include "context.h"
 
-  private:
-	void initVulkan();
+class Renderer {
+public:
+	Renderer(Context *ctx);
+
+private:
+	Context *ctx;
 };

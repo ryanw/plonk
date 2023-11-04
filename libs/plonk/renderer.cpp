@@ -1,19 +1,7 @@
 #include "include/plonk/renderer.h"
+#include <GLFW/glfw3.h>
 #include <iostream>
-#include <vulkan/vulkan.h>
+#include <optional>
+#include <vector>
 
-Renderer::Renderer() {
-	std::cout << "Creating Renderer\n";
-	initVulkan();
-}
-
-void Renderer::initVulkan() {
-	VkApplicationInfo appInfo{
-		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-		.pApplicationName = "Hello, Plonker",
-		.applicationVersion = VK_MAKE_VERSION(0, 0, 1),
-		.pEngineName = "Plonk",
-		.engineVersion = VK_MAKE_VERSION(0, 0, 1),
-		.apiVersion = VK_MAKE_VERSION(0, 0, 1),
-	};
-}
+Renderer::Renderer(Context *ctx) : ctx(ctx) { std::cout << "Creating Renderer\n"; }
