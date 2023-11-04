@@ -1,8 +1,47 @@
 #include "include/plonk/context.h"
 #include <GLFW/glfw3.h>
+#include <fstream>
 #include <iostream>
 #include <optional>
 #include <vector>
+
+auto loadFile(const std::string &filename) -> std::vector<char> {
+	std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+	if (!file.is_open()) {
+		throw std::runtime_error("Failed to open shader");
+	}
+
+	size_t filesize = (size_t)file.tellg();
+	std::vector<char> buffer(filesize);
+
+	file.seekg(0);
+	file.read(buffer.data(), filesize);
+	file.close();
+
+	return buffer;
+}
+
+auto Context::loadShader(const std::string &filename) -> VkShaderModule {
+	std::cout << "Opening shader: " << filename << "\n";
+	auto code = loadFile(filename);
+
+	VkShaderModuleCreateInfo createInfo{
+		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+		.codeSize = code.size(),
+		.pCode = reinterpret_cast<const uint32_t *>(code.data()),
+	};
+
+	VkShaderModule shader;
+	if (VK_SUCCESS != vkCreateShaderModule(device, &createInfo, nullptr, &shader)) {
+		throw std::runtime_error("Failed to create shader module");
+	}
+
+	std::cout << "Shader loaded:" << filename << "\n";
+	return shader;
+}
+
+void Context::destroyShader(VkShaderModule shader) { vkDestroyShaderModule(device, shader, nullptr); }
 
 auto chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats) -> VkSurfaceFormatKHR {
 	for (const auto &availableFormat : availableFormats) {
@@ -45,6 +84,7 @@ void Context::attachWindow(Window &window) {
 	}
 
 	createSwapchain();
+	createImageViews();
 }
 
 void Context::initVulkan() {
@@ -140,8 +180,8 @@ void Context::createSwapchain() {
 	};
 
 	extent = {
-		.width = 1920,
-		.height = 1080,
+		.width = 1024,
+		.height = 768,
 	};
 
 	VkSurfaceCapabilitiesKHR caps;
@@ -157,6 +197,8 @@ void Context::createSwapchain() {
 		.imageExtent = extent,
 		.imageArrayLayers = 1,
 		.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
+		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 		.presentMode = VK_PRESENT_MODE_FIFO_KHR,
 		.clipped = true,
 		.oldSwapchain = VK_NULL_HANDLE,
@@ -168,40 +210,43 @@ void Context::createSwapchain() {
 }
 
 void Context::createImageViews() {
-	std::cout << "Creating Swapchain Image Views\n";
 	VkSurfaceCapabilitiesKHR caps;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &caps);
 	uint32_t imageCount = caps.minImageCount;
+	printf("Creating %d Swapchain Image Views\n", imageCount);
 
 	vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
 	swapchainImages.resize(imageCount);
 	vkGetSwapchainImagesKHR(device, swapchain, &imageCount, swapchainImages.data());
 
 	swapchainImageViews.resize(swapchainImages.size());
-	VkImageViewCreateInfo createInfo{
-		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		.image = swapchainImages[0],
-		.viewType = VK_IMAGE_VIEW_TYPE_2D,
-		.format = surfaceFormat.format,
-		.components =
-			{
-				.r = VK_COMPONENT_SWIZZLE_R,
-				.g = VK_COMPONENT_SWIZZLE_G,
-				.b = VK_COMPONENT_SWIZZLE_B,
-				.a = VK_COMPONENT_SWIZZLE_A,
-			},
-		.subresourceRange =
-			{
-				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-				.baseMipLevel = 0,
-				.levelCount = 1,
-				.baseArrayLayer = 0,
-				.layerCount = 1,
-			},
-	};
 
-	if (VK_SUCCESS != vkCreateImageView(device, &createInfo, nullptr, &swapchainImageViews[0])) {
-		throw std::runtime_error("Failed to create swapchain Image Views");
+	for (int i = 0; i < imageCount; i++) {
+		VkImageViewCreateInfo createInfo{
+			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+			.image = swapchainImages[0],
+			.viewType = VK_IMAGE_VIEW_TYPE_2D,
+			.format = surfaceFormat.format,
+			.components =
+				{
+					.r = VK_COMPONENT_SWIZZLE_R,
+					.g = VK_COMPONENT_SWIZZLE_G,
+					.b = VK_COMPONENT_SWIZZLE_B,
+					.a = VK_COMPONENT_SWIZZLE_A,
+				},
+			.subresourceRange =
+				{
+					.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+					.baseMipLevel = 0,
+					.levelCount = 1,
+					.baseArrayLayer = 0,
+					.layerCount = 1,
+				},
+		};
+
+		if (VK_SUCCESS != vkCreateImageView(device, &createInfo, nullptr, &swapchainImageViews[i])) {
+			throw std::runtime_error("Failed to create swapchain Image Views");
+		}
 	}
 }
 

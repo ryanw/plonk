@@ -36,3 +36,8 @@ build/*
 
 # LSP cache
 .ccls-cache/
+
+# Spir-v shaders
+*.spv
+
+*.log

@@ -19,9 +19,7 @@ int main(int, char **) {
 	window.run([](Event event) {
 		std::visit(
 			overload{
-				[](DrawEvent &event) {
-					// std::cout << "DRAW!\n";
-				},
+				[](DrawEvent &event) { std::cout << "DRAW!\n"; },
 				[](MouseEvent &event) { std::cout << "MOUSE!\n"; },
 				[](KeyEvent &event) { std::cout << "KEY!\n"; },
 			},

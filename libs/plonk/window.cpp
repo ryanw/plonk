@@ -1,5 +1,7 @@
 #include "include/plonk/window.h"
+#include <chrono>
 #include <iostream>
+#include <thread>
 
 Window::Window(int width, int height) {
 	if (!glfwInit()) {
@@ -21,10 +23,12 @@ Window::Window(int width, int height) {
 }
 
 void Window::run(std::function<void(Event)> callback) {
+	double fps = 10.0;
 	while (!glfwWindowShouldClose(inner)) {
 		glfwPollEvents();
-		Event event = DrawEvent{.dt = 1.0 / 60.0};
+		Event event = DrawEvent{.dt = 1.0 / fps};
 		callback(event);
+		std::this_thread::sleep_for(std::chrono::milliseconds(int(fps * 1000.0 / 60.0)));
 	}
 
 	glfwTerminate();
