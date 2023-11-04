@@ -3,7 +3,7 @@
 #include <GLFW/glfw3.h>
 
 class Window {
-public:
+  public:
 	Window(int width, int height);
-	GLFWwindow* inner;
+	GLFWwindow *inner;
 };

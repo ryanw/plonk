@@ -1,6 +1,6 @@
 #include "include/plonk/renderer.h"
-#include <vulkan/vulkan.h>
 #include <iostream>
+#include <vulkan/vulkan.h>
 
 Renderer::Renderer() {
 	std::cout << "Creating Renderer\n";
@@ -8,7 +8,7 @@ Renderer::Renderer() {
 }
 
 void Renderer::initVulkan() {
-	VkApplicationInfo appInfo {
+	VkApplicationInfo appInfo{
 		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
 		.pApplicationName = "Hello, Plonker",
 		.applicationVersion = VK_MAKE_VERSION(0, 0, 1),

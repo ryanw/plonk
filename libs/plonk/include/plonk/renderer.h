@@ -1,9 +1,9 @@
 #pragma once
 
 class Renderer {
-public:
+  public:
 	Renderer();
 
-private:
+  private:
 	void initVulkan();
 };

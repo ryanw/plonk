@@ -1,8 +1,8 @@
 #include "include/plonk/context.h"
-#include <iostream>
 #include <GLFW/glfw3.h>
+#include <iostream>
 
-void Context::attachWindow(Window& window) {
+void Context::attachWindow(Window &window) {
 	std::cout << "Attaching window\n";
 
 	glfwMakeContextCurrent(window.inner);
