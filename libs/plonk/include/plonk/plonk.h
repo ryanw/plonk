@@ -1,8 +1,5 @@
-#ifndef PLONK_PUB_HEADER
-#define PLONK_PUB_HEADER
+#pragma once
 
-namespace plonk {
-	auto sum(int first, int second) -> int;
-}
-
-#endif
+#include "context.h"
+#include "window.h"
+#include "renderer.h"
