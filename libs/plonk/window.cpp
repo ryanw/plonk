@@ -23,12 +23,11 @@ Window::Window(int width, int height) {
 }
 
 void Window::run(std::function<void(Event)> callback) {
-	double fps = 10.0;
 	while (!glfwWindowShouldClose(inner)) {
 		glfwPollEvents();
-		Event event = DrawEvent{.dt = 1.0 / fps};
+		Event event = DrawEvent{.dt = 1.0 / 60.0};
 		callback(event);
-		std::this_thread::sleep_for(std::chrono::milliseconds(int(fps * 1000.0 / 60.0)));
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
 
 	glfwTerminate();

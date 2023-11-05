@@ -5,6 +5,37 @@
 #include <optional>
 #include <vector>
 
+auto chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats) -> VkSurfaceFormatKHR {
+	for (const auto &availableFormat : availableFormats) {
+		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
+			availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			return availableFormat;
+		}
+	}
+
+	return availableFormats[0];
+}
+
+auto findGraphicsQueue(VkPhysicalDevice &device) -> std::optional<uint32_t> {
+	std::optional<uint32_t> result;
+
+	uint32_t familyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &familyCount, nullptr);
+
+	std::vector<VkQueueFamilyProperties> families(familyCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &familyCount, families.data());
+
+	int i = 0;
+	for (const auto &family : families) {
+		if (family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+			return i;
+		}
+		i++;
+	}
+
+	return 0;
+}
+
 auto loadFile(const std::string &filename) -> std::vector<char> {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
@@ -43,48 +74,45 @@ auto Context::loadShader(const std::string &filename) -> VkShaderModule {
 
 void Context::destroyShader(VkShaderModule shader) { vkDestroyShaderModule(device, shader, nullptr); }
 
-auto chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats) -> VkSurfaceFormatKHR {
-	for (const auto &availableFormat : availableFormats) {
-		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
-			availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-			return availableFormat;
-		}
-	}
-
-	return availableFormats[0];
-}
-
-auto findQueueFamilies(VkPhysicalDevice &device) -> std::optional<uint32_t> {
-	std::optional<uint32_t> result;
-
-	uint32_t familyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &familyCount, nullptr);
-
-	std::vector<VkQueueFamilyProperties> families(familyCount);
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &familyCount, families.data());
-
-	int i = 0;
-	for (const auto &family : families) {
-		if (family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-			result = i;
-			break;
-		}
-		i++;
-	}
-
-	return result;
-}
-
 void Context::attachWindow(Window &window) {
 	std::cout << "Attaching window\n";
+
+	initVulkan();
 
 	VkResult result = glfwCreateWindowSurface(instance, window.inner, nullptr, &surface);
 	if (VK_SUCCESS != result) {
 		throw std::runtime_error("Failed to create window surface");
 	}
 
+	presentQueueFamilyIndex = findPresentQueue();
+	if (!presentQueueFamilyIndex.has_value()) {
+		throw std::runtime_error("Couldn't find a valid present queue family");
+	}
+	vkGetDeviceQueue(device, presentQueueFamilyIndex.value(), 0, &presentQueue);
+
 	createSwapchain();
 	createImageViews();
+}
+
+auto Context::findPresentQueue() -> std::optional<uint32_t> {
+	std::optional<uint32_t> result;
+
+	uint32_t familyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &familyCount, nullptr);
+
+	std::vector<VkQueueFamilyProperties> families(familyCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &familyCount, families.data());
+
+	int i = 0;
+	for (const auto &family : families) {
+		VkBool32 presentSupport = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
+		if (presentSupport)
+			return i;
+		i++;
+	}
+
+	return result;
 }
 
 void Context::initVulkan() {
@@ -130,15 +158,9 @@ void Context::initVulkan() {
 	vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 	physicalDevice = devices[0];
 
-	uint32_t queueFamilyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
-
-	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
-
-	auto family = findQueueFamilies(physicalDevice);
-	if (!family.has_value()) {
-		throw std::runtime_error("Couldn't find a valid queue family");
+	graphicsQueueFamilyIndex = findGraphicsQueue(physicalDevice);
+	if (!graphicsQueueFamilyIndex.has_value()) {
+		throw std::runtime_error("Couldn't find a valid graphics queue family");
 	}
 
 	std::cout << "Queue family found\n";
@@ -146,7 +168,7 @@ void Context::initVulkan() {
 	float queuePriority = 1.0f;
 	VkDeviceQueueCreateInfo queueCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-		.queueFamilyIndex = family.value(),
+		.queueFamilyIndex = graphicsQueueFamilyIndex.value(),
 		.queueCount = 1,
 		.pQueuePriorities = &queuePriority,
 	};
@@ -169,7 +191,7 @@ void Context::initVulkan() {
 	}
 	std::cout << "Logical device created\n";
 
-	vkGetDeviceQueue(device, family.value(), 0, &queue);
+	vkGetDeviceQueue(device, graphicsQueueFamilyIndex.value(), 0, &graphicsQueue);
 }
 
 void Context::createSwapchain() {
@@ -187,6 +209,7 @@ void Context::createSwapchain() {
 	VkSurfaceCapabilitiesKHR caps;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &caps);
 	uint32_t imageCount = caps.minImageCount;
+	printf("Swapchain has %d images\n", imageCount);
 
 	VkSwapchainCreateInfoKHR createInfo{
 		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
@@ -224,7 +247,7 @@ void Context::createImageViews() {
 	for (int i = 0; i < imageCount; i++) {
 		VkImageViewCreateInfo createInfo{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-			.image = swapchainImages[0],
+			.image = swapchainImages[i],
 			.viewType = VK_IMAGE_VIEW_TYPE_2D,
 			.format = surfaceFormat.format,
 			.components =
@@ -250,12 +273,13 @@ void Context::createImageViews() {
 	}
 }
 
-Context::Context() { initVulkan(); }
+Context::Context() {}
 
 Context::~Context() {
 	for (auto view : swapchainImageViews) {
 		vkDestroyImageView(device, view, nullptr);
 	}
+	vkDestroySwapchainKHR(device, swapchain, nullptr);
 	vkDestroySurfaceKHR(instance, surface, nullptr);
 	vkDestroyDevice(device, nullptr);
 	vkDestroyInstance(instance, nullptr);

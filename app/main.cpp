@@ -16,10 +16,10 @@ int main(int, char **) {
 
 	Renderer renderer(&ctx);
 
-	window.run([](Event event) {
+	window.run([&renderer](Event event) {
 		std::visit(
 			overload{
-				[](DrawEvent &event) { std::cout << "DRAW!\n"; },
+				[&renderer](DrawEvent &event) { renderer.draw(); },
 				[](MouseEvent &event) { std::cout << "MOUSE!\n"; },
 				[](KeyEvent &event) { std::cout << "KEY!\n"; },
 			},
