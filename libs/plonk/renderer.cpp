@@ -340,12 +340,10 @@ void Renderer::recordCommands(uint32_t imageIndex) {
 	};
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-
-
 	auto now = std::chrono::high_resolution_clock::now();
 	auto duration = now - startedAt;
 	float time = duration.count() / 1e9;
-	SimplePushConstants constants {
+	SimplePushConstants constants{
 		.time = time,
 	};
 	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstants), &constants);
