@@ -7,7 +7,9 @@
 #include "math.h"
 #include <GLFW/glfw3.h>
 #include <functional>
+#include <vector>
 #include <unordered_set>
+#include <unordered_map>
 
 class Window {
 public:

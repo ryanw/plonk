@@ -32,6 +32,7 @@ Window::Window(int width, int height) {
 
 	glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	std::cout << "Creating window\n";
 	inner = glfwCreateWindow(1024, 768, "Plonk", NULL, NULL);
 	glfwSetWindowUserPointer(inner, this);
 
@@ -45,7 +46,7 @@ Window::Window(int width, int height) {
 	glfwSetKeyCallback(inner, glfwKeyCallback);
 	glfwSetCursorPosCallback(inner, glfwMouseCallback);
 
-	std::cout << "Finished Plonk\n";
+	std::cout << "Window created\n";
 }
 
 int Window::width() {

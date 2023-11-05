@@ -119,10 +119,12 @@ void Context::attachWindow(Window &window) {
 
 	initVulkan();
 
+	std::cout << "Creating window surface\n";
 	VkResult result = glfwCreateWindowSurface(instance, window.inner, nullptr, &surface);
 	if (VK_SUCCESS != result) {
 		throw std::runtime_error("Failed to create window surface");
 	}
+	std::cout << "Created window surface\n";
 
 	presentQueueFamilyIndex = findPresentQueue();
 	if (!presentQueueFamilyIndex.has_value()) {
@@ -201,7 +203,16 @@ auto Context::findGraphicsQueue() -> std::optional<uint32_t> {
 
 void Context::initVulkan() {
 	uint32_t extensionCount = 0;
-	auto extensionNames = glfwGetRequiredInstanceExtensions(&extensionCount);
+	auto requiredExtensions = glfwGetRequiredInstanceExtensions(&extensionCount);
+	printf("Found %d required extensions\n", extensionCount);
+
+	std::vector<const char *> extensions;
+	extensions.push_back("VK_KHR_portability_enumeration");
+	for (int i = 0; i < extensionCount; i++) {
+		auto ext = requiredExtensions[i];
+		extensions.push_back(ext);
+		printf("EXT: %s\n", ext);
+	}
 
 	const std::vector<const char *> validationLayers = {
 		"VK_LAYER_KHRONOS_validation",
@@ -218,14 +229,17 @@ void Context::initVulkan() {
 
 	VkInstanceCreateInfo instanceCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+		.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR,
 		.pApplicationInfo = &appInfo,
 		.enabledLayerCount = static_cast<uint32_t>(validationLayers.size()),
 		.ppEnabledLayerNames = validationLayers.data(),
-		.enabledExtensionCount = extensionCount,
-		.ppEnabledExtensionNames = extensionNames,
+		.enabledExtensionCount = static_cast<uint32_t>(extensions.size()),
+		.ppEnabledExtensionNames = extensions.data(),
 	};
 
-	if (VK_SUCCESS != vkCreateInstance(&instanceCreateInfo, nullptr, &instance)) {
+	std::cout << "Creating Vulkan instances\n";
+	auto result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
+	if (VK_SUCCESS != result) {
 		throw std::runtime_error("Failed to create Vulkan instance");
 	}
 	std::cout << "Vulkan instance created\n";
@@ -273,11 +287,11 @@ void Context::initVulkan() {
 	if (VK_SUCCESS != vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device)) {
 		throw std::runtime_error("Failed to create logical device");
 	}
-	std::cout << "Logical device created\n";
 
 	vkGetDeviceQueue(device, graphicsQueueFamilyIndex.value(), 0, &graphicsQueue);
 
 	createSyncObjects();
+	std::cout << "Logical device created\n";
 }
 
 void Context::resizeSwapchain(uint32_t width, uint32_t height) {
