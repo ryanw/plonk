@@ -1,4 +1,3 @@
-.ONESHELL:
 .PHONY: all format compile clean
 
 all: compile
@@ -9,8 +8,8 @@ format:
 
 compile: compile-shaders
 	mkdir -p build
-	cd build
-	cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ..
+	cd build ;\
+	cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 .. && \
 	make
 
 compile-shaders:
