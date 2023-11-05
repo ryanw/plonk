@@ -27,7 +27,6 @@ void Window::run(std::function<void(Event)> callback) {
 		glfwPollEvents();
 		Event event = DrawEvent{.dt = 1.0 / 60.0};
 		callback(event);
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
 
 	glfwTerminate();

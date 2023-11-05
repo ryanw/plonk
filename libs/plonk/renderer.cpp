@@ -5,8 +5,13 @@
 #include <optional>
 #include <vector>
 
+struct SimplePushConstants {
+	float time;
+};
+
 Renderer::Renderer(Context *ctx) : ctx(ctx) {
 	std::cout << "Creating Renderer\n";
+	startedAt = std::chrono::high_resolution_clock::now();
 	vertShader = ctx->loadShader("shaders/simple.vert.spv");
 	fragShader = ctx->loadShader("shaders/simple.frag.spv");
 	createRenderPass();
@@ -18,7 +23,6 @@ Renderer::Renderer(Context *ctx) : ctx(ctx) {
 }
 
 void Renderer::draw() {
-	std::cout << "Drawing!\n";
 	vkWaitForFences(ctx->device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
 	vkResetFences(ctx->device, 1, &inFlightFence);
 
@@ -87,12 +91,19 @@ void Renderer::createRenderPass() {
 
 void Renderer::createPipeline() {
 	std::cout << "Creating Pipeline\n";
+
+	VkPushConstantRange pushConstantRange{
+		.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+		.offset = 0,
+		.size = sizeof(SimplePushConstants),
+	};
+
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 		.setLayoutCount = 0,
 		.pSetLayouts = nullptr,
-		.pushConstantRangeCount = 0,
-		.pPushConstantRanges = nullptr,
+		.pushConstantRangeCount = 1,
+		.pPushConstantRanges = &pushConstantRange,
 	};
 
 	if (VK_SUCCESS != vkCreatePipelineLayout(ctx->device, &pipelineLayoutInfo, nullptr, &pipelineLayout)) {
@@ -288,7 +299,6 @@ void Renderer::createCommandBuffer() {
 }
 
 void Renderer::recordCommands(uint32_t imageIndex) {
-	printf("Recording render commands for image: %d\n", imageIndex);
 	VkCommandBufferBeginInfo beginInfo{
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		.flags = 0,
@@ -311,7 +321,6 @@ void Renderer::recordCommands(uint32_t imageIndex) {
 		.clearValueCount = 1,
 		.pClearValues = &clearColor,
 	};
-
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
@@ -331,7 +340,16 @@ void Renderer::recordCommands(uint32_t imageIndex) {
 	};
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+
+	auto now = std::chrono::high_resolution_clock::now();
+	auto duration = now - startedAt;
+	float time = duration.count() / 1e9;
+	SimplePushConstants constants {
+		.time = time,
+	};
+	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstants), &constants);
+	vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
 	vkCmdEndRenderPass(commandBuffer);
 
@@ -341,7 +359,6 @@ void Renderer::recordCommands(uint32_t imageIndex) {
 }
 
 void Renderer::present(uint32_t imageIndex) {
-	printf("Presenting image %d\n", imageIndex);
 	VkSemaphore waitSemaphores[] = {imageAvailableSemaphore};
 	VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 	VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};

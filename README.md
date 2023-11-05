@@ -17,4 +17,4 @@ Plonk is a crappy and incomplete 3D engine written in C++ using Vulkan. Only a p
 
 ## Screenshot
 
-![Screenshot of a Triangle](https://github.com/ryanw/plonk/assets/3372/129ddb33-ec0e-46b5-aa29-1b5624b09770)
+![Screenshot](https://github.com/ryanw/plonk/assets/3372/34e97688-e038-4ed7-8923-0785edc6c708)

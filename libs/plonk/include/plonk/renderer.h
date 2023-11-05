@@ -1,6 +1,7 @@
 #pragma once
 
 #include "context.h"
+#include <chrono>
 
 class Renderer {
 public:
@@ -21,6 +22,7 @@ private:
 	VkSemaphore imageAvailableSemaphore;
 	VkSemaphore renderFinishedSemaphore;
 	VkFence inFlightFence;
+	std::chrono::time_point<std::chrono::high_resolution_clock> startedAt;
 
 	void createRenderPass();
 	void createPipeline();
