@@ -214,10 +214,6 @@ void Context::initVulkan() {
 }
 
 void Context::resizeSwapchain(uint32_t width, uint32_t height) {
-	if (swapchain) {
-		vkDestroySwapchainKHR(device, swapchain, nullptr);
-		swapchain = nullptr;
-	}
 	std::cout << "Creating Swap Chain\n";
 	surfaceFormat = {
 		.format = VK_FORMAT_B8G8R8A8_SRGB,
@@ -247,7 +243,7 @@ void Context::resizeSwapchain(uint32_t width, uint32_t height) {
 		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 		.presentMode = VK_PRESENT_MODE_FIFO_KHR,
 		.clipped = true,
-		.oldSwapchain = VK_NULL_HANDLE,
+		.oldSwapchain = swapchain,
 	};
 
 	if (VK_SUCCESS != vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain)) {
