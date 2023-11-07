@@ -5,12 +5,12 @@
 
 class Renderer {
 public:
-	Renderer(Context *ctx);
+	Renderer(Context &ctx);
 	~Renderer();
 	void draw();
 
 private:
-	Context *ctx;
+	Context &ctx;
 	VkShaderModule vertShader;
 	VkShaderModule fragShader;
 	VkPipeline pipeline;
@@ -24,9 +24,10 @@ private:
 	VkFence inFlightFence;
 	std::chrono::time_point<std::chrono::high_resolution_clock> startedAt;
 
+	void rebuildFramebuffers();
+	void handleResize();
 	void createRenderPass();
 	void createPipeline();
-	void createFramebuffers();
 	void createCommandPool();
 	void createCommandBuffer();
 	void createSyncObjects();

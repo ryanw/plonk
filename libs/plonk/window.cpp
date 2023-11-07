@@ -22,6 +22,18 @@ Window::Window(int width, int height) {
 	std::cout << "Finished Plonk\n";
 }
 
+int Window::width() {
+	int width;
+	glfwGetWindowSize(inner, &width, nullptr);
+	return width;
+}
+
+int Window::height() {
+	int height;
+	glfwGetWindowSize(inner, nullptr, &height);
+	return height;
+}
+
 void Window::run(std::function<void(Event)> callback) {
 	while (!glfwWindowShouldClose(inner)) {
 		glfwPollEvents();

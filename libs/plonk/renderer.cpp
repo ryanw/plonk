@@ -9,25 +9,27 @@ struct SimplePushConstants {
 	float time;
 };
 
-Renderer::Renderer(Context *ctx) : ctx(ctx) {
+Renderer::Renderer(Context &ctx) : ctx(ctx) {
 	std::cout << "Creating Renderer\n";
 	startedAt = std::chrono::high_resolution_clock::now();
-	vertShader = ctx->loadShader("shaders/simple.vert.spv");
-	fragShader = ctx->loadShader("shaders/simple.frag.spv");
+	vertShader = ctx.loadShader("shaders/simple.vert.spv");
+	fragShader = ctx.loadShader("shaders/simple.frag.spv");
 	createRenderPass();
 	createPipeline();
-	createFramebuffers();
+	rebuildFramebuffers();
 	createCommandPool();
 	createCommandBuffer();
 	createSyncObjects();
 }
 
 void Renderer::draw() {
-	vkWaitForFences(ctx->device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
-	vkResetFences(ctx->device, 1, &inFlightFence);
+	handleResize();
+
+	vkWaitForFences(ctx.device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
+	vkResetFences(ctx.device, 1, &inFlightFence);
 
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(ctx->device, ctx->getSwapchain(), UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+	vkAcquireNextImageKHR(ctx.device, ctx.getSwapchain(), UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 	vkResetCommandBuffer(commandBuffer, 0);
 	recordCommands(imageIndex);
 
@@ -45,17 +47,24 @@ void Renderer::draw() {
 		.pSignalSemaphores = signalSemaphores,
 	};
 
-	if (VK_SUCCESS != vkQueueSubmit(ctx->graphicsQueue, 1, &submitInfo, inFlightFence)) {
+	if (VK_SUCCESS != vkQueueSubmit(ctx.graphicsQueue, 1, &submitInfo, inFlightFence)) {
 		throw std::runtime_error("Failed to submit queue");
 	}
 
 	present(imageIndex);
 }
 
+void Renderer::handleResize() {
+	if (ctx.needsResize()) {
+		ctx.updateSwapchain();
+		rebuildFramebuffers();
+	}
+}
+
 void Renderer::createRenderPass() {
 	std::cout << "Creating Render Pass\n";
 	VkAttachmentDescription colorAttachment{
-		.format = ctx->format(),
+		.format = ctx.format(),
 		.samples = VK_SAMPLE_COUNT_1_BIT,
 		.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -84,7 +93,7 @@ void Renderer::createRenderPass() {
 		.pSubpasses = &subpass,
 	};
 
-	if (VK_SUCCESS != vkCreateRenderPass(ctx->device, &renderPassCreateInfo, nullptr, &renderPass)) {
+	if (VK_SUCCESS != vkCreateRenderPass(ctx.device, &renderPassCreateInfo, nullptr, &renderPass)) {
 		throw std::runtime_error("Failed to create RenderPass");
 	}
 }
@@ -106,22 +115,22 @@ void Renderer::createPipeline() {
 		.pPushConstantRanges = &pushConstantRange,
 	};
 
-	if (VK_SUCCESS != vkCreatePipelineLayout(ctx->device, &pipelineLayoutInfo, nullptr, &pipelineLayout)) {
+	if (VK_SUCCESS != vkCreatePipelineLayout(ctx.device, &pipelineLayoutInfo, nullptr, &pipelineLayout)) {
 		throw std::runtime_error("Failed to create Pipeline Layout");
 	}
 
 	VkViewport viewport{
 		.x = 0.0f,
 		.y = 0.0f,
-		.width = ctx->width(),
-		.height = ctx->height(),
+		.width = ctx.width(),
+		.height = ctx.height(),
 		.minDepth = 0.0f,
 		.maxDepth = 1.0f,
 	};
 
 	VkRect2D scissor{
 		.offset = {0, 0},
-		.extent = ctx->size(),
+		.extent = ctx.size(),
 	};
 
 	VkPipelineViewportStateCreateInfo viewportState{
@@ -234,20 +243,24 @@ void Renderer::createPipeline() {
 		.basePipelineIndex = -1,
 	};
 
-	if (VK_SUCCESS != vkCreateGraphicsPipelines(ctx->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline)) {
+	if (VK_SUCCESS != vkCreateGraphicsPipelines(ctx.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline)) {
 		throw std::runtime_error("Failed to create Pipeline");
 	}
 }
 
-void Renderer::createFramebuffers() {
-	auto count = ctx->swapchainImageCount();
+void Renderer::rebuildFramebuffers() {
+	for (auto framebuffer : framebuffers) {
+		vkDestroyFramebuffer(ctx.device, framebuffer, nullptr);
+		framebuffers.clear();
+	}
+	auto count = ctx.swapchainImageCount();
 	printf("Creating %d Framebuffers\n", count);
 
 	framebuffers.resize(count);
 
 	for (int i = 0; i < count; i++) {
 		printf("Framebuffer: %d\n", i);
-		auto imageView = ctx->getSwapchainImageView(i);
+		auto imageView = ctx.getSwapchainImageView(i);
 		if (!imageView) {
 			throw std::runtime_error("Missing image view");
 		}
@@ -257,12 +270,12 @@ void Renderer::createFramebuffers() {
 			.renderPass = renderPass,
 			.attachmentCount = 1,
 			.pAttachments = &imageView,
-			.width = (uint32_t)ctx->width(),
-			.height = (uint32_t)ctx->height(),
+			.width = (uint32_t)ctx.width(),
+			.height = (uint32_t)ctx.height(),
 			.layers = 1,
 		};
 
-		if (VK_SUCCESS != vkCreateFramebuffer(ctx->device, &framebufferInfo, nullptr, &framebuffers[i])) {
+		if (VK_SUCCESS != vkCreateFramebuffer(ctx.device, &framebufferInfo, nullptr, &framebuffers[i])) {
 			throw std::runtime_error("Failed to create Framebuffer");
 		}
 	}
@@ -270,7 +283,7 @@ void Renderer::createFramebuffers() {
 
 void Renderer::createCommandPool() {
 	printf("Creating command pool\n");
-	auto queueFamilyIndex = ctx->getGraphicsQueueFamilyIndex();
+	auto queueFamilyIndex = ctx.getGraphicsQueueFamilyIndex();
 	if (!queueFamilyIndex.has_value()) {
 		throw std::runtime_error("No queue family index defined");
 	}
@@ -280,7 +293,7 @@ void Renderer::createCommandPool() {
 		.queueFamilyIndex = queueFamilyIndex.value(),
 	};
 
-	if (VK_SUCCESS != vkCreateCommandPool(ctx->device, &poolInfo, nullptr, &commandPool)) {
+	if (VK_SUCCESS != vkCreateCommandPool(ctx.device, &poolInfo, nullptr, &commandPool)) {
 		throw std::runtime_error("Failed to create Command Pool");
 	}
 }
@@ -293,7 +306,7 @@ void Renderer::createCommandBuffer() {
 		.commandBufferCount = 1,
 	};
 
-	if (VK_SUCCESS != vkAllocateCommandBuffers(ctx->device, &allocInfo, &commandBuffer)) {
+	if (VK_SUCCESS != vkAllocateCommandBuffers(ctx.device, &allocInfo, &commandBuffer)) {
 		throw std::runtime_error("Failed to allocate command buffer");
 	}
 }
@@ -316,7 +329,7 @@ void Renderer::recordCommands(uint32_t imageIndex) {
 		.renderArea =
 			{
 				.offset = {0, 0},
-				.extent = ctx->size(),
+				.extent = ctx.size(),
 			},
 		.clearValueCount = 1,
 		.pClearValues = &clearColor,
@@ -327,8 +340,8 @@ void Renderer::recordCommands(uint32_t imageIndex) {
 	VkViewport viewport{
 		.x = 0.0f,
 		.y = 0.0f,
-		.width = ctx->width(),
-		.height = ctx->height(),
+		.width = ctx.width(),
+		.height = ctx.height(),
 		.minDepth = 0.0f,
 		.maxDepth = 1.0f,
 	};
@@ -336,7 +349,7 @@ void Renderer::recordCommands(uint32_t imageIndex) {
 
 	VkRect2D scissor{
 		.offset = {0, 0},
-		.extent = ctx->size(),
+		.extent = ctx.size(),
 	};
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
@@ -361,7 +374,7 @@ void Renderer::present(uint32_t imageIndex) {
 	VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 	VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
 
-	VkSwapchainKHR swapchains[] = {ctx->getSwapchain()};
+	VkSwapchainKHR swapchains[] = {ctx.getSwapchain()};
 	VkPresentInfoKHR presentInfo{
 		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		.waitSemaphoreCount = 1,
@@ -371,8 +384,8 @@ void Renderer::present(uint32_t imageIndex) {
 		.pImageIndices = &imageIndex,
 		.pResults = nullptr,
 	};
-	vkQueuePresentKHR(ctx->presentQueue, &presentInfo);
-	vkDeviceWaitIdle(ctx->device);
+	vkQueuePresentKHR(ctx.presentQueue, &presentInfo);
+	vkDeviceWaitIdle(ctx.device);
 }
 
 void Renderer::createSyncObjects() {
@@ -386,28 +399,28 @@ void Renderer::createSyncObjects() {
 		.flags = VK_FENCE_CREATE_SIGNALED_BIT,
 	};
 
-	if (VK_SUCCESS != vkCreateSemaphore(ctx->device, &semaphoreInfo, nullptr, &imageAvailableSemaphore)) {
+	if (VK_SUCCESS != vkCreateSemaphore(ctx.device, &semaphoreInfo, nullptr, &imageAvailableSemaphore)) {
 		throw std::runtime_error("Failed to create image available semaphore");
 	}
-	if (VK_SUCCESS != vkCreateSemaphore(ctx->device, &semaphoreInfo, nullptr, &renderFinishedSemaphore)) {
+	if (VK_SUCCESS != vkCreateSemaphore(ctx.device, &semaphoreInfo, nullptr, &renderFinishedSemaphore)) {
 		throw std::runtime_error("Failed to create render finished semaphore");
 	}
-	if (VK_SUCCESS != vkCreateFence(ctx->device, &fenceInfo, nullptr, &inFlightFence)) {
+	if (VK_SUCCESS != vkCreateFence(ctx.device, &fenceInfo, nullptr, &inFlightFence)) {
 		throw std::runtime_error("Failed to create in-flight fence");
 	}
 }
 
 Renderer::~Renderer() {
-	vkDestroySemaphore(ctx->device, imageAvailableSemaphore, nullptr);
-	vkDestroySemaphore(ctx->device, renderFinishedSemaphore, nullptr);
-	vkDestroyFence(ctx->device, inFlightFence, nullptr);
-	vkDestroyCommandPool(ctx->device, commandPool, nullptr);
+	vkDestroySemaphore(ctx.device, imageAvailableSemaphore, nullptr);
+	vkDestroySemaphore(ctx.device, renderFinishedSemaphore, nullptr);
+	vkDestroyFence(ctx.device, inFlightFence, nullptr);
+	vkDestroyCommandPool(ctx.device, commandPool, nullptr);
 	for (auto framebuffer : framebuffers) {
-		vkDestroyFramebuffer(ctx->device, framebuffer, nullptr);
+		vkDestroyFramebuffer(ctx.device, framebuffer, nullptr);
 	}
-	vkDestroyPipeline(ctx->device, pipeline, nullptr);
-	vkDestroyPipelineLayout(ctx->device, pipelineLayout, nullptr);
-	vkDestroyRenderPass(ctx->device, renderPass, nullptr);
-	ctx->destroyShader(vertShader);
-	ctx->destroyShader(fragShader);
+	vkDestroyPipeline(ctx.device, pipeline, nullptr);
+	vkDestroyPipelineLayout(ctx.device, pipelineLayout, nullptr);
+	vkDestroyRenderPass(ctx.device, renderPass, nullptr);
+	ctx.destroyShader(vertShader);
+	ctx.destroyShader(fragShader);
 }

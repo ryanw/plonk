@@ -14,7 +14,7 @@ int main(int, char **) {
 	Context ctx;
 	ctx.attachWindow(window);
 
-	Renderer renderer(&ctx);
+	Renderer renderer(ctx);
 
 	window.run([&renderer](Event event) {
 		std::visit(

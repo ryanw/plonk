@@ -13,4 +13,6 @@ public:
 	GLFWwindow *inner;
 
 	void run(std::function<void(Event)> callback);
+	int width();
+	int height();
 };

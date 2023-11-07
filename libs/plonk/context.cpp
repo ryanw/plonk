@@ -77,6 +77,8 @@ void Context::destroyShader(VkShaderModule shader) { vkDestroyShaderModule(devic
 void Context::attachWindow(Window &window) {
 	std::cout << "Attaching window\n";
 
+	this->window = &window;
+
 	initVulkan();
 
 	VkResult result = glfwCreateWindowSurface(instance, window.inner, nullptr, &surface);
@@ -90,8 +92,25 @@ void Context::attachWindow(Window &window) {
 	}
 	vkGetDeviceQueue(device, presentQueueFamilyIndex.value(), 0, &presentQueue);
 
-	createSwapchain();
-	createImageViews();
+	rebuildSwapchain();
+}
+
+bool Context::needsResize() {
+	return (extent.width != window->width() || extent.height != window->height());
+}
+
+void Context::updateSwapchain() {
+	if (needsResize()) {
+		rebuildSwapchain();
+	}
+}
+
+void Context::rebuildSwapchain() {
+	if (!window) {
+		throw std::runtime_error("Can't create swapchain without an attached window");
+	}
+	resizeSwapchain(window->width(), window->height());
+	rebuildImageViews();
 }
 
 auto Context::findPresentQueue() -> std::optional<uint32_t> {
@@ -194,7 +213,11 @@ void Context::initVulkan() {
 	vkGetDeviceQueue(device, graphicsQueueFamilyIndex.value(), 0, &graphicsQueue);
 }
 
-void Context::createSwapchain() {
+void Context::resizeSwapchain(uint32_t width, uint32_t height) {
+	if (swapchain) {
+		vkDestroySwapchainKHR(device, swapchain, nullptr);
+		swapchain = nullptr;
+	}
 	std::cout << "Creating Swap Chain\n";
 	surfaceFormat = {
 		.format = VK_FORMAT_B8G8R8A8_SRGB,
@@ -202,8 +225,8 @@ void Context::createSwapchain() {
 	};
 
 	extent = {
-		.width = 1024,
-		.height = 768,
+		.width = width,
+		.height = height,
 	};
 
 	VkSurfaceCapabilitiesKHR caps;
@@ -232,7 +255,12 @@ void Context::createSwapchain() {
 	}
 }
 
-void Context::createImageViews() {
+void Context::rebuildImageViews() {
+	for (auto view : swapchainImageViews) {
+		vkDestroyImageView(device, view, nullptr);
+		swapchainImageViews.clear();
+	}
+
 	VkSurfaceCapabilitiesKHR caps;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &caps);
 	uint32_t imageCount = caps.minImageCount;
