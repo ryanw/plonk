@@ -6,6 +6,7 @@
 #include <vector>
 
 struct SimplePushConstants {
+	float size[2];
 	float time;
 };
 
@@ -357,6 +358,7 @@ void Renderer::recordCommands(uint32_t imageIndex) {
 	auto duration = now - startedAt;
 	float time = duration.count() / 1e9;
 	SimplePushConstants constants{
+		.size = {viewport.width, viewport.height},
 		.time = time,
 	};
 	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstants), &constants);

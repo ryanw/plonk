@@ -5,6 +5,7 @@
 
 layout(push_constant)
 	uniform constants {
+		vec2 size;
 		float time;
 	} PushConstants;
 
@@ -107,8 +108,10 @@ void main() {
 
 	// Camera is just above the origin
 	vec3 ro = vec3(0.0, -1.0, -12.0);
+
 	// Screen is 1 in front of the camera -- controls FoV
-	vec3 rd = normalize(vec3(uv.x, uv.y + 0.4, 1.0));
+	float aspect = PushConstants.size.y / PushConstants.size.x;
+	vec3 rd = normalize(vec3(uv.x / aspect, uv.y, 1.0));
 
 	DistanceResult dist = rayMarch(ro, rd);
 	float d = dist.d;
