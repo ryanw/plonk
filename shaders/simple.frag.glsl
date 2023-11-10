@@ -41,13 +41,13 @@ DistanceResult getDistance(vec3 p) {
 	DistanceResult result;
 	result.d = MAX_DIST + 1.0;
 	float t = PushConstants.time;
-	vec3 ballPos = vec3(0.0, 5.0 + sin(t * 2.0) * 9.0, 6.0);
+	vec3 ballPos = vec3(sin(t) * 15.0, 5.0, 12.0);
 	vec3 boxPos = vec3(0.0, 5.0, 12.0);
-	float sphereDist = sdfSphere(p - ballPos, 3.0);
-	float boxDist = sdfBox(p - boxPos, vec3(10.0, 0.3, 15.0));
+	float ballDist = sdfSphere(p - ballPos, 5.0);
+	float boxDist = sdfBox(p - boxPos, vec3(4.0));
 
-	float d = opSmooth(sphereDist, boxDist, 7.0);
-	result.d = opSmoothUnion(sphereDist, boxDist, 7.0);
+	float d = opSmooth(ballDist, boxDist, 5.0);
+	result.d = opSmoothUnion(ballDist, boxDist, 5.0);
 
 	vec3 boxColor = vec3(0.3, 0.9, 0.1);
 	vec3 ballColor = vec3(1.0, 0.1, 0.2);

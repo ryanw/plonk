@@ -1,4 +1,5 @@
 #include "include/plonk/context.h"
+#include "include/plonk/frame.h"
 #include <GLFW/glfw3.h>
 #include <fstream>
 #include <iostream>
@@ -14,26 +15,6 @@ auto chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFor
 	}
 
 	return availableFormats[0];
-}
-
-auto findGraphicsQueue(VkPhysicalDevice &device) -> std::optional<uint32_t> {
-	std::optional<uint32_t> result;
-
-	uint32_t familyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &familyCount, nullptr);
-
-	std::vector<VkQueueFamilyProperties> families(familyCount);
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &familyCount, families.data());
-
-	int i = 0;
-	for (const auto &family : families) {
-		if (family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-			return i;
-		}
-		i++;
-	}
-
-	return 0;
 }
 
 auto loadFile(const std::string &filename) -> std::vector<char> {
@@ -53,6 +34,63 @@ auto loadFile(const std::string &filename) -> std::vector<char> {
 	return buffer;
 }
 
+Context::Context() {
+}
+
+void Context::createCommandPool() {
+	printf("Creating command pool\n");
+	auto queueFamilyIndex = getGraphicsQueueFamilyIndex();
+	if (!queueFamilyIndex.has_value()) {
+		throw std::runtime_error("No queue family index defined");
+	}
+	VkCommandPoolCreateInfo poolInfo{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+		.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+		.queueFamilyIndex = queueFamilyIndex.value(),
+	};
+
+	if (VK_SUCCESS != vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool)) {
+		throw std::runtime_error("Failed to create Command Pool");
+	}
+}
+
+VkCommandBuffer Context::createCommandBuffer() {
+	VkCommandBufferAllocateInfo allocInfo{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.commandPool = commandPool,
+		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.commandBufferCount = 1,
+	};
+
+	if (VK_SUCCESS != vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer)) {
+		throw std::runtime_error("Failed to allocate command buffer");
+	}
+
+	return commandBuffer;
+}
+
+VkPipeline Context::createGraphicsPipeline(VkGraphicsPipelineCreateInfo *pipelineInfo) {
+	VkPipeline pipeline;
+	if (!pipelineInfo->renderPass) {
+		pipelineInfo->renderPass = renderPass;
+	}
+	if (VK_SUCCESS != vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, pipelineInfo, nullptr, &pipeline)) {
+		throw std::runtime_error("Failed to create Pipeline");
+	}
+
+	return pipeline;
+}
+
+void Context::bindPipeline(VkPipeline &pipeline) {
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+}
+
+/**
+ * Load a SPIR-V shader from disk
+ *
+ * @param filename Path to the compiled shader
+ * @return The Vulkan shader module
+ */
 auto Context::loadShader(const std::string &filename) -> VkShaderModule {
 	std::cout << "Opening shader: " << filename << "\n";
 	auto code = loadFile(filename);
@@ -92,7 +130,12 @@ void Context::attachWindow(Window &window) {
 	}
 	vkGetDeviceQueue(device, presentQueueFamilyIndex.value(), 0, &presentQueue);
 
-	rebuildSwapchain();
+	resizeSwapchain(window.width(), window.height());
+	createRenderPass();
+	createCommandPool();
+	createCommandBuffer();
+	rebuildImageViews();
+	rebuildFramebuffers();
 }
 
 bool Context::needsResize() {
@@ -111,6 +154,7 @@ void Context::rebuildSwapchain() {
 	}
 	resizeSwapchain(window->width(), window->height());
 	rebuildImageViews();
+	rebuildFramebuffers();
 }
 
 auto Context::findPresentQueue() -> std::optional<uint32_t> {
@@ -133,6 +177,27 @@ auto Context::findPresentQueue() -> std::optional<uint32_t> {
 
 	return result;
 }
+
+auto Context::findGraphicsQueue() -> std::optional<uint32_t> {
+	std::optional<uint32_t> result;
+
+	uint32_t familyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &familyCount, nullptr);
+
+	std::vector<VkQueueFamilyProperties> families(familyCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &familyCount, families.data());
+
+	int i = 0;
+	for (const auto &family : families) {
+		if (family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+			return i;
+		}
+		i++;
+	}
+
+	return 0;
+}
+
 
 void Context::initVulkan() {
 	uint32_t extensionCount = 0;
@@ -177,7 +242,7 @@ void Context::initVulkan() {
 	vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 	physicalDevice = devices[0];
 
-	graphicsQueueFamilyIndex = findGraphicsQueue(physicalDevice);
+	graphicsQueueFamilyIndex = findGraphicsQueue();
 	if (!graphicsQueueFamilyIndex.has_value()) {
 		throw std::runtime_error("Couldn't find a valid graphics queue family");
 	}
@@ -211,9 +276,16 @@ void Context::initVulkan() {
 	std::cout << "Logical device created\n";
 
 	vkGetDeviceQueue(device, graphicsQueueFamilyIndex.value(), 0, &graphicsQueue);
+
+	createSyncObjects();
 }
 
 void Context::resizeSwapchain(uint32_t width, uint32_t height) {
+	if (swapchain) {
+		std::cout << "Destroying old Swap Chain\n";
+		vkDestroySwapchainKHR(device, swapchain, nullptr);
+		swapchain = nullptr;
+	}
 	std::cout << "Creating Swap Chain\n";
 	surfaceFormat = {
 		.format = VK_FORMAT_B8G8R8A8_SRGB,
@@ -226,6 +298,7 @@ void Context::resizeSwapchain(uint32_t width, uint32_t height) {
 	};
 
 	VkSurfaceCapabilitiesKHR caps;
+	std::cout << "Checking device capabilities\n";
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &caps);
 	uint32_t imageCount = caps.minImageCount;
 	printf("Swapchain has %d images\n", imageCount);
@@ -243,12 +316,13 @@ void Context::resizeSwapchain(uint32_t width, uint32_t height) {
 		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 		.presentMode = VK_PRESENT_MODE_FIFO_KHR,
 		.clipped = true,
-		.oldSwapchain = swapchain,
+		.oldSwapchain = nullptr,
 	};
 
 	if (VK_SUCCESS != vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain)) {
 		throw std::runtime_error("Failed to create swapchain");
 	}
+	std::cout << "Created Swap Chain\n";
 }
 
 void Context::rebuildImageViews() {
@@ -297,9 +371,187 @@ void Context::rebuildImageViews() {
 	}
 }
 
-Context::Context() {}
+Frame Context::aquireFrame() {
+	vkWaitForFences(device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
+	vkResetFences(device, 1, &inFlightFence);
+	uint32_t index;
+	vkAcquireNextImageKHR(device, getSwapchain(), UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &index);
+	Frame frame(*this, index);
+	vkResetCommandBuffer(commandBuffer, 0);
+	VkCommandBufferBeginInfo beginInfo{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.flags = 0,
+		.pInheritanceInfo = nullptr,
+	};
+	if (VK_SUCCESS != vkBeginCommandBuffer(commandBuffer, &beginInfo)) {
+		throw std::runtime_error("Failed to start command recording");
+	}
+	beginRenderPass(index);
+	return frame;
+}
+
+void Context::beginRenderPass(FrameIndex index) {
+	VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+	VkRenderPassBeginInfo renderPassInfo{
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.renderPass = renderPass,
+		.framebuffer = framebuffers[index],
+		.renderArea =
+			{
+				.offset = {0, 0},
+				.extent = size(),
+			},
+		.clearValueCount = 1,
+		.pClearValues = &clearColor,
+	};
+	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void Context::submit(VkCommandBuffer &commandBuffer) {
+	VkSemaphore waitSemaphores[] = {imageAvailableSemaphore};
+	VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+	VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
+	VkSubmitInfo submitInfo{
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.waitSemaphoreCount = 1,
+		.pWaitSemaphores = waitSemaphores,
+		.pWaitDstStageMask = waitStages,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &commandBuffer,
+		.signalSemaphoreCount = 1,
+		.pSignalSemaphores = signalSemaphores,
+	};
+
+	if (VK_SUCCESS != vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFence)) {
+		throw std::runtime_error("Failed to submit queue");
+	}
+}
+void Context::presentFrame(Frame &frame) {
+	vkCmdEndRenderPass(commandBuffer);
+	vkEndCommandBuffer(commandBuffer);
+	submit(commandBuffer);
+
+	VkSemaphore waitSemaphores[] = {imageAvailableSemaphore};
+	VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+	VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
+
+	VkSwapchainKHR swapchains[] = {getSwapchain()};
+	VkPresentInfoKHR presentInfo{
+		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+		.waitSemaphoreCount = 1,
+		.pWaitSemaphores = signalSemaphores,
+		.swapchainCount = 1,
+		.pSwapchains = swapchains,
+		.pImageIndices = &frame.index,
+		.pResults = nullptr,
+	};
+	vkQueuePresentKHR(presentQueue, &presentInfo);
+	vkDeviceWaitIdle(device);
+}
+
+
+void Context::createSyncObjects() {
+	printf("Creating sync objects\n");
+
+	VkSemaphoreCreateInfo semaphoreInfo{
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+	};
+	VkFenceCreateInfo fenceInfo{
+		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		.flags = VK_FENCE_CREATE_SIGNALED_BIT,
+	};
+
+	if (VK_SUCCESS != vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphore)) {
+		throw std::runtime_error("Failed to create image available semaphore");
+	}
+	if (VK_SUCCESS != vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphore)) {
+		throw std::runtime_error("Failed to create render finished semaphore");
+	}
+	if (VK_SUCCESS != vkCreateFence(device, &fenceInfo, nullptr, &inFlightFence)) {
+		throw std::runtime_error("Failed to create in-flight fence");
+	}
+}
+
+void Context::rebuildFramebuffers() {
+	for (auto framebuffer : framebuffers) {
+		vkDestroyFramebuffer(device, framebuffer, nullptr);
+		framebuffers.clear();
+	}
+	auto count = swapchainImageCount();
+	printf("Creating %d Framebuffers\n", count);
+
+	framebuffers.resize(count);
+
+	for (int i = 0; i < count; i++) {
+		printf("Framebuffer: %d\n", i);
+		auto imageView = getSwapchainImageView(i);
+		if (!imageView) {
+			throw std::runtime_error("Missing image view");
+		}
+
+		VkFramebufferCreateInfo framebufferInfo{
+			.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+			.renderPass = renderPass,
+			.attachmentCount = 1,
+			.pAttachments = &imageView,
+			.width = (uint32_t)width(),
+			.height = (uint32_t)height(),
+			.layers = 1,
+		};
+
+		if (VK_SUCCESS != vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i])) {
+			throw std::runtime_error("Failed to create Framebuffer");
+		}
+	}
+}
+
+void Context::createRenderPass() {
+	std::cout << "Creating Render Pass\n";
+	VkAttachmentDescription colorAttachment{
+		.format = format(),
+		.samples = VK_SAMPLE_COUNT_1_BIT,
+		.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+		.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+		.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+		.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+	};
+
+	VkAttachmentReference colorAttachmentRef{
+		.attachment = 0,
+		.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	};
+
+	VkSubpassDescription subpass{
+		.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+		.colorAttachmentCount = 1,
+		.pColorAttachments = &colorAttachmentRef,
+	};
+
+	VkRenderPassCreateInfo renderPassCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+		.attachmentCount = 1,
+		.pAttachments = &colorAttachment,
+		.subpassCount = 1,
+		.pSubpasses = &subpass,
+	};
+
+	if (VK_SUCCESS != vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &renderPass)) {
+		throw std::runtime_error("Failed to create RenderPass");
+	}
+	std::cout << "Render pass created\n";
+}
 
 Context::~Context() {
+	vkDestroyCommandPool(device, commandPool, nullptr);
+	for (auto framebuffer : framebuffers) {
+		vkDestroyFramebuffer(device, framebuffer, nullptr);
+	}
+	vkDestroyRenderPass(device, renderPass, nullptr);
+	vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
+	vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
+	vkDestroyFence(device, inFlightFence, nullptr);
 	for (auto view : swapchainImageViews) {
 		vkDestroyImageView(device, view, nullptr);
 	}

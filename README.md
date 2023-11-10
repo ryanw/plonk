@@ -1,6 +1,8 @@
 # Plonk
 
-Plonk is a crappy and incomplete 3D engine written in C++ using Vulkan. Only a plonker would use this engine.
+Plonk is a crappy and incomplete 3D engine written in C++ using Vulkan. This is
+the first time I've made anything with C++ and Vulkan, so only a plonker would
+use this engine.
 
 ## How to build and run
 

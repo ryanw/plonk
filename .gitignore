@@ -41,3 +41,5 @@ build/*
 *.spv
 
 *.log
+
+docs/
