@@ -40,7 +40,7 @@ public:
 	float magnitudeSquared() const {
 		float mag = 0.0;
 		for (int i = 0; i < Size; i++) {
-			mag += std::abs(coords[i]);
+			mag += std::pow(std::abs(coords[i]), 2);
 		}
 		return mag;
 	}

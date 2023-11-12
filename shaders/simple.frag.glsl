@@ -109,7 +109,7 @@ float calcLight(vec3 p) {
 void main() {
 	vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
 
-	float zoom = 1.5;
+	float zoom = 1.0;
 
 	vec3 ro = u.position;
 	vec3 f = u.direction;
