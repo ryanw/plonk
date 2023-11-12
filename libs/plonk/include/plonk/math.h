@@ -10,8 +10,9 @@ public:
 	float coords[Size];
 
 	template <typename... Args>
-	BaseVector(Args... args) : coords(args...) {
-		static_assert(sizeof...(Args) == Size, "Invalid size");
+	BaseVector(float first, Args... rest) {
+		static_assert(sizeof...(Args) == Size - 1, "Invalid size");
+		processConstructorArg(0, first, rest...);
 	};
 
 	BaseVector() {
@@ -57,6 +58,15 @@ public:
 		}
 		return vec;
 	}
+
+private:
+	template <typename... Args>
+	void processConstructorArg(int index, float first, Args... rest) {
+		coords[index] = first;
+		processConstructorArg(index + 1, rest...);
+	}
+	void processConstructorArg(int index) {}
+
 };
 
 template <std::size_t Size>
