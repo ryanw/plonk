@@ -4,10 +4,11 @@
 #define SURFACE_DIST 0.01
 
 layout(push_constant)
-	uniform constants {
-		vec2 size;
+	uniform _ {
+		vec2 screenSize;
+		vec3 position;
 		float time;
-	} PushConstants;
+	} u;
 
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec2 uv;
@@ -40,7 +41,7 @@ float opSmoothUnion(float d0, float d1, float k) {
 DistanceResult getDistance(vec3 p) {
 	DistanceResult result;
 	result.d = MAX_DIST + 1.0;
-	float t = PushConstants.time;
+	float t = u.time;
 	vec3 ballPos = vec3(sin(t) * 15.0, 5.0, 12.0);
 	vec3 boxPos = vec3(0.0, 5.0, 12.0);
 	float ballDist = sdfSphere(p - ballPos, 5.0);
@@ -89,7 +90,7 @@ vec3 calcNormal(vec3 p) {
 
 float calcLight(vec3 p) {
 	vec3 lightPos = vec3(10.0, -15.0, 2.0);
-	//lightPos.xz += vec2(sin(PushConstants.time * 1.7), cos(PushConstants.time * 1.3)) * 13.0;
+	//lightPos.xz += vec2(sin(u.time * 1.7), cos(u.time * 1.3)) * 13.0;
 	vec3 lightDir = normalize(lightPos - p);
 	vec3 n = calcNormal(p);
 
@@ -107,10 +108,10 @@ void main() {
 	vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
 
 	// Camera is just above the origin
-	vec3 ro = vec3(0.0, -1.0, -12.0);
+	vec3 ro = u.position;
 
 	// Screen is 1 in front of the camera -- controls FoV
-	float aspect = PushConstants.size.y / PushConstants.size.x;
+	float aspect = u.screenSize.y / u.screenSize.x;
 	vec3 rd = normalize(vec3(uv.x / aspect, uv.y, 1.0));
 
 	DistanceResult dist = rayMarch(ro, rd);

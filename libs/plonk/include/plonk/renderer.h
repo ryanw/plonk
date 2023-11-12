@@ -1,13 +1,14 @@
 #pragma once
 
 #include "context.h"
+#include "camera.h"
 #include <chrono>
 
 class Renderer {
 public:
 	Renderer(Context &ctx);
 	~Renderer();
-	void draw();
+	void draw(Camera &camera);
 
 private:
 	Context &ctx;
@@ -22,6 +23,6 @@ private:
 	void createPipeline();
 	void createCommandPool();
 	void createCommandBuffer();
-	void recordCommands();
+	void recordCommands(Camera &camera);
 	void present();
 };

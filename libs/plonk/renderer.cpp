@@ -1,5 +1,7 @@
 #include "include/plonk/frame.h"
 #include "include/plonk/renderer.h"
+#include "include/plonk/camera.h"
+#include "include/plonk/math.h"
 #include <GLFW/glfw3.h>
 #include <fstream>
 #include <iostream>
@@ -7,7 +9,9 @@
 #include <vector>
 
 struct SimplePushConstants {
-	float size[2];
+	float screenSize[2];
+	float _pad0[2];
+	Point3 position;
 	float time;
 };
 
@@ -19,11 +23,11 @@ Renderer::Renderer(Context &ctx) : ctx(ctx) {
 	createPipeline();
 }
 
-void Renderer::draw() {
+void Renderer::draw(Camera &camera) {
 	handleResize();
 
 	auto frame = ctx.aquireFrame();
-	recordCommands();
+	recordCommands(camera);
 	frame.present();
 }
 
@@ -183,7 +187,7 @@ void Renderer::createPipeline() {
 	std::cout << "Created Pipeline\n";
 }
 
-void Renderer::recordCommands() {
+void Renderer::recordCommands(Camera &camera) {
 	ctx.bindPipeline(pipeline);
 
 	auto &commandBuffer = ctx.commandBuffer;
@@ -208,7 +212,8 @@ void Renderer::recordCommands() {
 	auto duration = now - startedAt;
 	float time = duration.count() / 1e9;
 	SimplePushConstants constants{
-		.size = {viewport.width, viewport.height},
+		.screenSize = {viewport.width, viewport.height},
+		.position = {camera.position.coords[0], camera.position.coords[1], camera.position.coords[2]},
 		.time = time,
 	};
 	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstants), &constants);

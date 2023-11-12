@@ -6,6 +6,7 @@ add_library(${PROJECT_NAME}
 	window.cpp
 	renderer.cpp
 	frame.cpp
+	camera.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} glfw vulkan X11)

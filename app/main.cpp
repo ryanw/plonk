@@ -14,12 +14,22 @@ int main(int, char **) {
 	Context ctx;
 	ctx.attachWindow(window);
 
+	Camera camera;
+	camera.setPosition(Point3(0.0, -1.0, -12.0));
 	Renderer renderer(ctx);
 
-	window.run([&renderer](Event event) {
+	
+    auto startTime = std::chrono::high_resolution_clock::now();
+
+	window.run([&](Event event) {
 		std::visit(
 			overload{
-				[&renderer](DrawEvent &event) { renderer.draw(); },
+				[&](DrawEvent &event) {
+					auto now = std::chrono::high_resolution_clock::now();
+					double elapsedaSeconds = (now - startTime).count() / 1000000000.00;
+					camera.position.coords[1] = std::cos(elapsedaSeconds * 2.0);
+					renderer.draw(camera);
+				},
 				[](MouseEvent &event) { std::cout << "MOUSE!\n"; },
 				[](KeyEvent &event) { std::cout << "KEY!\n"; },
 			},
