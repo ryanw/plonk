@@ -1,12 +1,13 @@
 #version 450
-#define MAX_STEPS 1024
+#define MAX_STEPS 256
 #define MAX_DIST 1024.0
-#define SURFACE_DIST 0.01
+#define SURFACE_DIST 0.02
 
 layout(push_constant)
 	uniform _ {
 		vec2 screenSize;
 		vec3 position;
+		vec3 direction;
 		float time;
 	} u;
 
@@ -73,7 +74,8 @@ DistanceResult rayMarch(vec3 ro, vec3 rd) {
 		}
 	}
 
-	return DistanceResult(d, vec3(0.0, 0.0, 1.0));
+	// Too many steps
+	return DistanceResult(d, vec3(1.0, 0.0, 1.0));
 }
 
 
@@ -107,12 +109,16 @@ float calcLight(vec3 p) {
 void main() {
 	vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
 
-	// Camera is just above the origin
-	vec3 ro = u.position;
+	float zoom = 1.5;
 
-	// Screen is 1 in front of the camera -- controls FoV
+	vec3 ro = u.position;
+	vec3 f = u.direction;
+	vec3 r = normalize(cross(vec3(0.0, 1.0, 0.0), u.direction));
+	vec3 up = cross(f, r);
+	vec3 c = ro + f * zoom;
 	float aspect = u.screenSize.y / u.screenSize.x;
-	vec3 rd = normalize(vec3(uv.x / aspect, uv.y, 1.0));
+	vec3 o = c + (uv.x / aspect) * r + uv.y * up;
+	vec3 rd = normalize(o - ro);
 
 	DistanceResult dist = rayMarch(ro, rd);
 	float d = dist.d;

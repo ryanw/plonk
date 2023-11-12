@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cmath>
+#include <iostream>
 
 template <std::size_t Size, typename Derived>
 class BaseVector {
@@ -19,19 +20,35 @@ public:
 		}
 	}
 
-	float magnitudeSquared() {
+	float x() const {
+		return coords[0];
+	}
+
+	float y() const {
+		return coords[1];
+	}
+
+	float z() const {
+		return coords[2];
+	}
+
+	float w() const {
+		return coords[3];
+	}
+
+	float magnitudeSquared() const {
 		float mag = 0.0;
 		for (int i = 0; i < Size; i++) {
-			mag += coords[i];
+			mag += std::abs(coords[i]);
 		}
 		return mag;
 	}
 
-	float magnitude() {
+	float magnitude() const {
 		return std::sqrt(magnitudeSquared());
 	}
 
-	Derived normalize() {
+	Derived normalize() const {
 		auto mag = magnitude();
 
 		Derived vec;
@@ -40,7 +57,6 @@ public:
 		}
 		return vec;
 	}
-
 };
 
 template <std::size_t Size>
@@ -55,6 +71,14 @@ class Point : public BaseVector<Size, Point<Size>> {
 public:
 	template <typename... Args>
 	Point(Args... args) : BaseVector<Size, Point<Size>>(args...) {}
+
+	Vector<Size> operator-(const Point<Size> &other) const {
+		Vector<Size> vec;
+		for (int i = 0; i < Size; i++) {
+			vec.coords[i] = this->coords[i] - other.coords[i];
+		}
+		return vec;
+	}
 };
 
 typedef Vector<2> Vector2;

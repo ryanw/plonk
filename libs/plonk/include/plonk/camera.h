@@ -13,6 +13,8 @@ public:
 
 	void setPosition(Point3 position);
 	void setDirection(Vector3 direction);
+	void rotate(float x, float y);
+	void rotate(float x, float y, float z);
 
 protected:
 };

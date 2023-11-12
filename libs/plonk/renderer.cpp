@@ -12,6 +12,8 @@ struct SimplePushConstants {
 	float screenSize[2];
 	float _pad0[2];
 	Point3 position;
+	float _pad1[1];
+	Point3 direction;
 	float time;
 };
 
@@ -214,6 +216,7 @@ void Renderer::recordCommands(Camera &camera) {
 	SimplePushConstants constants{
 		.screenSize = {viewport.width, viewport.height},
 		.position = {camera.position.coords[0], camera.position.coords[1], camera.position.coords[2]},
+		.direction = {camera.direction.coords[0], camera.direction.coords[1], camera.direction.coords[2]},
 		.time = time,
 	};
 	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstants), &constants);
