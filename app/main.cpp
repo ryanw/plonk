@@ -33,7 +33,7 @@ int main(int, char **) {
 
 	Point2 prevMousePos;
 	window.onMouseMove([&](auto position) {
-		Vector2 d = prevMousePos - position;
+		auto d = prevMousePos - position;
 		if (window.isMouseGrabbed()) {
 			camera.rotate(d.y() / 500.0, d.x() / 500.0);
 		}
@@ -46,22 +46,22 @@ int main(int, char **) {
 		lastFrame = now;
 
 		if (window.isKeyHeld(Key::W)) {
-			camera.position.coords[2] += speed * dt;
+			camera.translate(0.0, 0.0, speed * dt);
 		}
 		if (window.isKeyHeld(Key::S)) {
-			camera.position.coords[2] -= speed * dt;
+			camera.translate(0.0, 0.0, -speed * dt);
 		}
 		if (window.isKeyHeld(Key::A)) {
-			camera.position.coords[0] -= speed * dt;
+			camera.translate(-speed * dt, 0.0, 0.0);
 		}
 		if (window.isKeyHeld(Key::D)) {
-			camera.position.coords[0] += speed * dt;
+			camera.translate(speed * dt, 0.0, 0.0);
 		}
 		if (window.isKeyHeld(Key::E)) {
-			camera.position.coords[1] -= speed * dt;
+			camera.translate(0.0, -speed * dt, 0.0);
 		}
 		if (window.isKeyHeld(Key::Q)) {
-			camera.position.coords[1] += speed * dt;
+			camera.translate(0.0, speed * dt, 0.0);
 		}
 		renderer.draw(camera);
 	}

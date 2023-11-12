@@ -1,12 +1,19 @@
 project(plonk_tests)
 
-add_executable(${PROJECT_NAME}
-    main.cpp
+create_test_sourcelist(TestFiles
+	TestSuite.cpp
+	math.cpp
 )
 
-target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-        libs::plonk
+add_executable(TestSuite ${TestFiles})
+target_link_libraries(TestSuite
+	PRIVATE
+		libs::plonk
 )
+set(TestsToRun ${TestFiles})
+remove(TestsToRun TestSuite.cpp)
 
-add_test(plonk_tests ${PROJECT_NAME})
+foreach (test ${TestsToRun})
+	get_filename_component(TName ${test} NAME_WE)
+	add_test(NAME ${TName} COMMAND TestSuite ${TName})
+endforeach()
