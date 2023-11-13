@@ -81,6 +81,10 @@ public:
 		return vec;
 	}
 
+	float operator[](int index) {
+		return coords[index];
+	}
+
 	template <typename T>
 	Derived operator+(const BaseVector<Size, T> &other) const {
 		Derived vec;
