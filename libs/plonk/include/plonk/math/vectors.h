@@ -40,6 +40,25 @@ public:
 		return coords[3];
 	}
 
+	template <typename T>
+	float dot(const BaseVector<Size, T> &other) const {
+		float result = 0.0;
+		for (int i = 0; i < Size; i++) {
+			result += coords[i] * other.coords[i];
+		}
+		return result;
+	}
+
+	template <typename T>
+	Vector<Size> cross(const BaseVector<Size, T> &other) const {
+		static_assert(Size == 3, "not a 3D vector");
+		auto x = this->y() * other.z() - this->z() * other.y();
+		auto y = this->z() * other.x() - this->x() * other.z();
+		auto z = this->x() * other.y() - this->y() * other.x();
+		Vector<Size> result(x, y, z);
+		return result;
+	}
+
 	float magnitude_squared() const {
 		float mag = 0.0;
 		for (int i = 0; i < Size; i++) {

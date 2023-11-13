@@ -25,6 +25,10 @@ run: compile
 watch: compile
 	find app libs/plonk shaders/*.glsl -type f | entr make compile
 
+watch-tests: compile
+	find app libs/plonk shaders/*.glsl -type f | entr make test
+
 test: compile
 	cd build ;\
-	make test
+	make test || \
+	cat Testing/Temporary/LastTest.log
