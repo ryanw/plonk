@@ -11,8 +11,8 @@ public:
 	Camera();
 	~Camera();
 
-	void setPosition(Point3 position);
-	void setDirection(Vector3 direction);
+	void set_position(Point3 position);
+	void set_direction(Vector3 direction);
 	void rotate(float x, float y);
 	void translate(float x, float y, float z);
 

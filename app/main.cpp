@@ -12,55 +12,55 @@ int main(int, char **) {
 	Window window(1920, 1080);
 
 	Context ctx;
-	ctx.attachWindow(window);
+	ctx.attach_window(window);
 
 	Camera camera;
-	camera.setPosition(Point3(0.0, -1.0, -12.0));
+	camera.set_position(Point3(0.0, -1.0, -12.0));
 	Renderer renderer(ctx);
 
 	auto speed = 60.0;
 
-	auto lastFrame = std::chrono::high_resolution_clock::now();
+	auto last_frame = std::chrono::high_resolution_clock::now();
 
-	window.onKeyPress(Key::SPACE, [&]() {
-		if (window.isMouseGrabbed()) {
-			window.releaseMouse();
+	window.on_key_press(Key::SPACE, [&]() {
+		if (window.is_mouse_grabbed()) {
+			window.release_mouse();
 		}
 		else {
-			window.grabMouse();
+			window.grab_mouse();
 		}
 	});
 
-	Point2 prevMousePos;
-	window.onMouseMove([&](auto position) {
-		auto d = prevMousePos - position;
-		if (window.isMouseGrabbed()) {
+	Point2 prev_mouse_pos;
+	window.on_mouse_move([&](auto position) {
+		auto d = prev_mouse_pos - position;
+		if (window.is_mouse_grabbed()) {
 			camera.rotate(d.y() / 500.0, d.x() / 500.0);
 		}
-		prevMousePos = position;
+		prev_mouse_pos = position;
 	});
 
 	while (window.poll()) {
 		auto now = std::chrono::high_resolution_clock::now();
-		double dt = (now - lastFrame).count() / 1000000000.00;
-		lastFrame = now;
+		double dt = (now - last_frame).count() / 1000000000.00;
+		last_frame = now;
 
-		if (window.isKeyHeld(Key::W)) {
+		if (window.is_key_held(Key::W)) {
 			camera.translate(0.0, 0.0, speed * dt);
 		}
-		if (window.isKeyHeld(Key::S)) {
+		if (window.is_key_held(Key::S)) {
 			camera.translate(0.0, 0.0, -speed * dt);
 		}
-		if (window.isKeyHeld(Key::A)) {
+		if (window.is_key_held(Key::A)) {
 			camera.translate(-speed * dt, 0.0, 0.0);
 		}
-		if (window.isKeyHeld(Key::D)) {
+		if (window.is_key_held(Key::D)) {
 			camera.translate(speed * dt, 0.0, 0.0);
 		}
-		if (window.isKeyHeld(Key::E)) {
+		if (window.is_key_held(Key::E)) {
 			camera.translate(0.0, -speed * dt, 0.0);
 		}
-		if (window.isKeyHeld(Key::Q)) {
+		if (window.is_key_held(Key::Q)) {
 			camera.translate(0.0, speed * dt, 0.0);
 		}
 		renderer.draw(camera);

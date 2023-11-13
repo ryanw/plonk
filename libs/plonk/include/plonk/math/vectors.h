@@ -15,7 +15,7 @@ public:
 	template <typename... Args>
 	BaseVector(float first, Args... rest) {
 		static_assert(sizeof...(Args) == Size - 1, "Invalid size");
-		processConstructorArg(0, first, rest...);
+		process_constructor_arg(0, first, rest...);
 	};
 
 	BaseVector() {
@@ -40,7 +40,7 @@ public:
 		return coords[3];
 	}
 
-	float magnitudeSquared() const {
+	float magnitude_squared() const {
 		float mag = 0.0;
 		for (int i = 0; i < Size; i++) {
 			mag += std::pow(std::abs(coords[i]), 2);
@@ -49,7 +49,7 @@ public:
 	}
 
 	float magnitude() const {
-		return std::sqrt(magnitudeSquared());
+		return std::sqrt(magnitude_squared());
 	}
 
 	Derived normalize() const {
@@ -90,11 +90,11 @@ public:
 
 private:
 	template <typename... Args>
-	void processConstructorArg(int index, float first, Args... rest) {
+	void process_constructor_arg(int index, float first, Args... rest) {
 		coords[index] = first;
-		processConstructorArg(index + 1, rest...);
+		process_constructor_arg(index + 1, rest...);
 	}
-	void processConstructorArg(int index) {}
+	void process_constructor_arg(int index) {}
 
 };
 

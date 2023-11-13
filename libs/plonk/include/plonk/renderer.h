@@ -12,17 +12,17 @@ public:
 
 private:
 	Context &ctx;
-	VkShaderModule vertShader;
-	VkShaderModule fragShader;
+	VkShaderModule vert_shader;
+	VkShaderModule frag_shader;
 	VkPipeline pipeline;
-	VkPipelineLayout pipelineLayout;
-	std::chrono::time_point<std::chrono::high_resolution_clock> startedAt;
+	VkPipelineLayout pipeline_layout;
+	std::chrono::time_point<std::chrono::high_resolution_clock> started_at;
 
-	void handleResize();
-	void createRenderPass();
-	void createPipeline();
-	void createCommandPool();
-	void createCommandBuffer();
-	void recordCommands(Camera &camera);
+	void handle_resize();
+	void create_render_pass();
+	void create_pipeline();
+	void create_command_pool();
+	void create_command_buffer();
+	void record_commands(Camera &camera);
 	void present();
 };

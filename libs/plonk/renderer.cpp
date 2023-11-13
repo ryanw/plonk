@@ -9,7 +9,7 @@
 #include <vector>
 
 struct SimplePushConstants {
-	float screenSize[2];
+	float screen_size[2];
 	float _pad0[2];
 	Point3 position;
 	float _pad1[1];
@@ -19,44 +19,44 @@ struct SimplePushConstants {
 
 Renderer::Renderer(Context &ctx) : ctx(ctx) {
 	std::cout << "Creating Renderer\n";
-	startedAt = std::chrono::high_resolution_clock::now();
-	vertShader = ctx.loadShader("shaders/simple.vert.spv");
-	fragShader = ctx.loadShader("shaders/simple.frag.spv");
-	createPipeline();
+	started_at = std::chrono::high_resolution_clock::now();
+	vert_shader = ctx.load_shader("shaders/simple.vert.spv");
+	frag_shader = ctx.load_shader("shaders/simple.frag.spv");
+	create_pipeline();
 }
 
 void Renderer::draw(Camera &camera) {
-	handleResize();
+	handle_resize();
 
-	auto frame = ctx.aquireFrame();
-	recordCommands(camera);
+	auto frame = ctx.aquire_frame();
+	record_commands(camera);
 	frame.present();
 }
 
-void Renderer::handleResize() {
-	if (ctx.needsResize()) {
-		ctx.updateSwapchain();
+void Renderer::handle_resize() {
+	if (ctx.needs_resize()) {
+		ctx.update_swapchain();
 	}
 }
 
-void Renderer::createPipeline() {
+void Renderer::create_pipeline() {
 	std::cout << "Creating Pipeline\n";
 
-	VkPushConstantRange pushConstantRange{
+	VkPushConstantRange push_constant_range{
 		.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
 		.offset = 0,
 		.size = sizeof(SimplePushConstants),
 	};
 
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo{
+	VkPipelineLayoutCreateInfo pipeline_layout_info{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 		.setLayoutCount = 0,
 		.pSetLayouts = nullptr,
 		.pushConstantRangeCount = 1,
-		.pPushConstantRanges = &pushConstantRange,
+		.pPushConstantRanges = &push_constant_range,
 	};
 
-	if (VK_SUCCESS != vkCreatePipelineLayout(ctx.device, &pipelineLayoutInfo, nullptr, &pipelineLayout)) {
+	if (VK_SUCCESS != vkCreatePipelineLayout(ctx.device, &pipeline_layout_info, nullptr, &pipeline_layout)) {
 		throw std::runtime_error("Failed to create Pipeline Layout");
 	}
 
@@ -74,7 +74,7 @@ void Renderer::createPipeline() {
 		.extent = ctx.size(),
 	};
 
-	VkPipelineViewportStateCreateInfo viewportState{
+	VkPipelineViewportStateCreateInfo viewport_state{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
 		.viewportCount = 1,
 		.pViewports = &viewport,
@@ -82,29 +82,29 @@ void Renderer::createPipeline() {
 		.pScissors = &scissor,
 	};
 
-	VkPipelineShaderStageCreateInfo vertCreateInfo{
+	VkPipelineShaderStageCreateInfo vert_create_info{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 		.stage = VK_SHADER_STAGE_VERTEX_BIT,
-		.module = vertShader,
+		.module = vert_shader,
 		.pName = "main",
 	};
 
-	VkPipelineShaderStageCreateInfo fragCreateInfo{
+	VkPipelineShaderStageCreateInfo frag_create_info{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 		.stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-		.module = fragShader,
+		.module = frag_shader,
 		.pName = "main",
 	};
 
-	VkPipelineShaderStageCreateInfo stages[] = {vertCreateInfo, fragCreateInfo};
+	VkPipelineShaderStageCreateInfo stages[] = {vert_create_info, frag_create_info};
 
-	VkPipelineInputAssemblyStateCreateInfo inputAssembly{
+	VkPipelineInputAssemblyStateCreateInfo input_assembly{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
 		.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 		.primitiveRestartEnable = VK_FALSE,
 	};
 
-	VkPipelineVertexInputStateCreateInfo vertexInputState{
+	VkPipelineVertexInputStateCreateInfo vertex_input_state{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 		.vertexBindingDescriptionCount = 0,
 		.pVertexBindingDescriptions = nullptr,
@@ -112,15 +112,15 @@ void Renderer::createPipeline() {
 		.pVertexAttributeDescriptions = nullptr,
 	};
 
-	std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+	std::vector<VkDynamicState> dynamic_states = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
-	VkPipelineDynamicStateCreateInfo dynamicState{
+	VkPipelineDynamicStateCreateInfo dynamic_state{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-		.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
-		.pDynamicStates = dynamicStates.data(),
+		.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size()),
+		.pDynamicStates = dynamic_states.data(),
 	};
 
-	VkPipelineRasterizationStateCreateInfo rasterizerState{
+	VkPipelineRasterizationStateCreateInfo rasterizer_state{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 		.depthClampEnable = VK_FALSE,
 		.rasterizerDiscardEnable = VK_FALSE,
@@ -134,7 +134,7 @@ void Renderer::createPipeline() {
 		.lineWidth = 1.0f,
 	};
 
-	VkPipelineMultisampleStateCreateInfo multisampleState{
+	VkPipelineMultisampleStateCreateInfo multisample_state{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
 		.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
 		.sampleShadingEnable = VK_FALSE,
@@ -144,7 +144,7 @@ void Renderer::createPipeline() {
 		.alphaToOneEnable = VK_FALSE,
 	};
 
-	VkPipelineColorBlendAttachmentState colorBlendAttachment{
+	VkPipelineColorBlendAttachmentState color_blend_attachment{
 		.blendEnable = VK_FALSE,
 		.srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
 		.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
@@ -156,43 +156,43 @@ void Renderer::createPipeline() {
 			VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
 	};
 
-	VkPipelineColorBlendStateCreateInfo colorBlendState{
+	VkPipelineColorBlendStateCreateInfo color_blend_state{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
 		.logicOpEnable = VK_FALSE,
 		.logicOp = VK_LOGIC_OP_COPY,
 		.attachmentCount = 1,
-		.pAttachments = &colorBlendAttachment,
+		.pAttachments = &color_blend_attachment,
 		.blendConstants = {0.0, 0.0, 0.0, 0.0},
 	};
 
-	VkGraphicsPipelineCreateInfo pipelineInfo{
+	VkGraphicsPipelineCreateInfo pipeline_info{
 		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 		.stageCount = 2,
 		.pStages = stages,
-		.pVertexInputState = &vertexInputState,
-		.pInputAssemblyState = &inputAssembly,
-		.pViewportState = &viewportState,
-		.pRasterizationState = &rasterizerState,
-		.pMultisampleState = &multisampleState,
+		.pVertexInputState = &vertex_input_state,
+		.pInputAssemblyState = &input_assembly,
+		.pViewportState = &viewport_state,
+		.pRasterizationState = &rasterizer_state,
+		.pMultisampleState = &multisample_state,
 		.pDepthStencilState = nullptr,
-		.pColorBlendState = &colorBlendState,
-		.pDynamicState = &dynamicState,
-		.layout = pipelineLayout,
+		.pColorBlendState = &color_blend_state,
+		.pDynamicState = &dynamic_state,
+		.layout = pipeline_layout,
 		.renderPass = nullptr,
 		.subpass = 0,
 		.basePipelineHandle = VK_NULL_HANDLE,
 		.basePipelineIndex = -1,
 	};
 
-	pipeline = ctx.createGraphicsPipeline(&pipelineInfo);
+	pipeline = ctx.create_graphics_pipeline(&pipeline_info);
 
 	std::cout << "Created Pipeline\n";
 }
 
-void Renderer::recordCommands(Camera &camera) {
-	ctx.bindPipeline(pipeline);
+void Renderer::record_commands(Camera &camera) {
+	ctx.bind_pipeline(pipeline);
 
-	auto &commandBuffer = ctx.commandBuffer;
+	auto &command_buffer = ctx.command_buffer;
 
 	VkViewport viewport{
 		.x = 0.0f,
@@ -202,30 +202,30 @@ void Renderer::recordCommands(Camera &camera) {
 		.minDepth = 0.0f,
 		.maxDepth = 1.0f,
 	};
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 
 	VkRect2D scissor{
 		.offset = {0, 0},
 		.extent = ctx.size(),
 	};
-	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
 	auto now = std::chrono::high_resolution_clock::now();
-	auto duration = now - startedAt;
+	auto duration = now - started_at;
 	float time = duration.count() / 1e9;
 	SimplePushConstants constants{
-		.screenSize = {viewport.width, viewport.height},
+		.screen_size = {viewport.width, viewport.height},
 		.position = {camera.position.coords[0], camera.position.coords[1], camera.position.coords[2]},
 		.direction = {camera.direction.coords[0], camera.direction.coords[1], camera.direction.coords[2]},
 		.time = time,
 	};
-	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstants), &constants);
-	vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+	vkCmdPushConstants(command_buffer, pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstants), &constants);
+	vkCmdDraw(command_buffer, 6, 1, 0, 0);
 }
 
 Renderer::~Renderer() {
 	vkDestroyPipeline(ctx.device, pipeline, nullptr);
-	vkDestroyPipelineLayout(ctx.device, pipelineLayout, nullptr);
-	ctx.destroyShader(vertShader);
-	ctx.destroyShader(fragShader);
+	vkDestroyPipelineLayout(ctx.device, pipeline_layout, nullptr);
+	ctx.destroy_shader(vert_shader);
+	ctx.destroy_shader(frag_shader);
 }

@@ -5,24 +5,24 @@ Camera::Camera() {}
 
 Camera::~Camera() {}
 
-void Camera::setPosition(Point3 position) {
+void Camera::set_position(Point3 position) {
 	this->position = position;
 }
 
-void Camera::setDirection(Vector3 direction) {
+void Camera::set_direction(Vector3 direction) {
 	this->direction = direction.normalize();
 }
 
 void Camera::rotate(float x, float y) {
 	auto angle = y;
-	auto newX = direction.coords[0] * std::cos(angle) - direction.coords[2] * std::sin(angle);
-	auto newY = direction.coords[0] * std::sin(angle) + direction.coords[2] * std::cos(angle);
-	direction = Vector3(newX, direction.coords[1], newY).normalize();
+	auto new_x = direction.coords[0] * std::cos(angle) - direction.coords[2] * std::sin(angle);
+	auto new_y = direction.coords[0] * std::sin(angle) + direction.coords[2] * std::cos(angle);
+	direction = Vector3(new_x, direction.coords[1], new_y).normalize();
 
 	angle = x;
-	newX = direction.coords[1] * std::cos(angle) - direction.coords[2] * std::sin(angle);
-	newY = direction.coords[1] * std::sin(angle) + direction.coords[2] * std::cos(angle);
-	direction = Vector3(direction.coords[0], newX, newY).normalize();
+	new_x = direction.coords[1] * std::cos(angle) - direction.coords[2] * std::sin(angle);
+	new_y = direction.coords[1] * std::sin(angle) + direction.coords[2] * std::cos(angle);
+	direction = Vector3(direction.coords[0], new_x, new_y).normalize();
 
 }
 

@@ -7,6 +7,6 @@ Frame::Frame(Context &ctx, FrameIndex index) : ctx(ctx), index(index) {
 Frame::~Frame() {}
 
 void Frame::present() {
-	ctx.presentFrame(*this);
+	ctx.present_frame(*this);
 }
 

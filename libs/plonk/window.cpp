@@ -3,24 +3,24 @@
 #include <iostream>
 #include <thread>
 
-void Window::glfwKeyCallback(GLFWwindow* inner, int key, int scancode, int action, int mods) {
+void Window::glfw_key_callback(GLFWwindow* inner, int key, int scancode, int action, int mods) {
 	Window *window = static_cast<Window*>(glfwGetWindowUserPointer(inner));
 	switch (action) {
 		case GLFW_PRESS:
-			window->keyPressCallback((Key)key, mods);
+			window->key_press_callback((Key)key, mods);
 			break;
 		case GLFW_RELEASE:
-			window->keyReleaseCallback((Key)key, mods);
+			window->key_release_callback((Key)key, mods);
 			break;
 		case GLFW_REPEAT:
-			window->keyRepeatCallback((Key)key, mods);
+			window->key_repeat_callback((Key)key, mods);
 			break;
 	}
 }
 
-void Window::glfwMouseCallback(GLFWwindow* inner, double x, double y) {
+void Window::glfw_mouse_callback(GLFWwindow* inner, double x, double y) {
 	Window *window = static_cast<Window*>(glfwGetWindowUserPointer(inner));
-	window->mouseMoveCallback(x, y);
+	window->mouse_move_callback(x, y);
 }
 
 Window::Window(int width, int height) {
@@ -42,8 +42,8 @@ Window::Window(int width, int height) {
 	}
 
 
-	glfwSetKeyCallback(inner, glfwKeyCallback);
-	glfwSetCursorPosCallback(inner, glfwMouseCallback);
+	glfwSetKeyCallback(inner, glfw_key_callback);
+	glfwSetCursorPosCallback(inner, glfw_mouse_callback);
 
 	std::cout << "Finished Plonk\n";
 }
@@ -60,82 +60,82 @@ int Window::height() {
 	return height;
 }
 
-void Window::onMouseMove(std::function<void(Point2)> callback) {
-	mouseMoveCallbacks.push_back(callback);
+void Window::on_mouse_move(std::function<void(Point2)> callback) {
+	mouse_move_callbacks.push_back(callback);
 }
 
-void Window::onKeyPress(Key key, std::function<void(void)> callback) {
-	if (!keyPressCallbacks.contains(key)) {
-		keyPressCallbacks[key] = std::vector<std::function<void(void)>>();
+void Window::on_key_press(Key key, std::function<void(void)> callback) {
+	if (!key_press_callbacks.contains(key)) {
+		key_press_callbacks[key] = std::vector<std::function<void(void)>>();
 	}
-	keyPressCallbacks[key].push_back(callback);
+	key_press_callbacks[key].push_back(callback);
 }
 
-void Window::onKeyRelease(Key key, std::function<void(void)> callback) {
-	if (!keyReleaseCallbacks.contains(key)) {
-		keyReleaseCallbacks[key] = std::vector<std::function<void(void)>>();
+void Window::on_key_release(Key key, std::function<void(void)> callback) {
+	if (!key_release_callbacks.contains(key)) {
+		key_release_callbacks[key] = std::vector<std::function<void(void)>>();
 	}
-	keyReleaseCallbacks[key].push_back(callback);
+	key_release_callbacks[key].push_back(callback);
 }
 
-bool Window::isOpen() {
+bool Window::is_open() {
 	return !glfwWindowShouldClose(inner);
 }
 
 bool Window::poll() {
 	glfwPollEvents();
-	return isOpen();
+	return is_open();
 }
 
-bool Window::isKeyHeld(Key key) {
-	return heldKeys.contains(key);
+bool Window::is_key_held(Key key) {
+	return held_keys.contains(key);
 }
 
-void Window::keyPressCallback(Key key, int mods) {
-	heldKeys.insert(key);
-	if (keyPressCallbacks.contains(key)) {
-		auto callbacks = keyPressCallbacks[key];
+void Window::key_press_callback(Key key, int mods) {
+	held_keys.insert(key);
+	if (key_press_callbacks.contains(key)) {
+		auto callbacks = key_press_callbacks[key];
 		for (auto &callback : callbacks) {
 			callback();
 		}
 	}
 }
 
-void Window::keyReleaseCallback(Key key, int mods) {
-	heldKeys.erase(key);
-	if (keyReleaseCallbacks.contains(key)) {
-		auto callbacks = keyReleaseCallbacks[key];
+void Window::key_release_callback(Key key, int mods) {
+	held_keys.erase(key);
+	if (key_release_callbacks.contains(key)) {
+		auto callbacks = key_release_callbacks[key];
 		for (auto &callback : callbacks) {
 			callback();
 		}
 	}
 }
 
-void Window::keyRepeatCallback(Key key, int mods) {
+void Window::key_repeat_callback(Key key, int mods) {
 }
-void Window::mouseMoveCallback(double x, double y) {
-	mouseX = x;
-	mouseY = y;
+void Window::mouse_move_callback(double x, double y) {
+	mouse_x = x;
+	mouse_y = y;
 	Point2 p(x, y);
-	for (auto &callback : mouseMoveCallbacks) {
+	for (auto &callback : mouse_move_callbacks) {
 		callback(p);
 	}
 }
-Point2 Window::mousePosition() {
-	return Point2(mouseX, mouseY);
+Point2 Window::mouse_position() {
+	return Point2(mouse_x, mouse_y);
 }
 
-void Window::grabMouse() {
+void Window::grab_mouse() {
 	printf("Grabbing mouse\n");
 	glfwSetInputMode(inner, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
-void Window::releaseMouse() {
+void Window::release_mouse() {
 	printf("Releasing mouse\n");
 	glfwSetInputMode(inner, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
 
-bool Window::isMouseGrabbed() {
+bool Window::is_mouse_grabbed() {
 	auto mode = glfwGetInputMode(inner, GLFW_CURSOR);
 	return mode == GLFW_CURSOR_DISABLED;
 }
