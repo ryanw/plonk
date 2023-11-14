@@ -48,6 +48,60 @@ public:
 		data[15] = c3r3;
 	};
 
+	static Matrix4 from_translation(float x, float y, float z) {
+		Matrix4 mat(
+			1.0, 0.0, 0.0, 0.0,
+			0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 1.0, 0.0,
+			x, y, z, 1.0
+		);
+
+		return mat;
+	}
+
+	static Matrix4 from_rotation(float x, float y, float z) {
+		float cx = std::cos(x);
+		float sx = std::sin(x);
+		float cy = std::cos(y);
+		float sy = std::sin(y);
+		float cz = std::cos(z);
+		float sz = std::sin(z);
+
+		Matrix4 rotx(
+			1, 0, 0, 0,
+			0, cx, sx, 0,
+			0, -sx, cx, 0,
+			0, 0, 0, 1
+		);
+
+		Matrix4 roty(
+			cy, 0, -sy, 0,
+			0, 1, 0, 0,
+			sy, 0, cy, 0,
+			0, 0, 0, 1
+		);
+
+		Matrix4 rotz(
+			cz, sz, 0, 0,
+			-sz, cz, 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1
+		);
+
+		return rotz * roty * rotx;
+	}
+
+	static Matrix4 from_scaling(float x, float y, float z) {
+		Matrix4 mat(
+			x, 0.0, 0.0, 0.0,
+			0.0, y, 0.0, 0.0,
+			0.0, 0.0, z, 0.0,
+			0.0, 0.0, 0.0, 1.0
+		);
+
+		return mat;
+	}
+
 	std::array<Vector4, 4> columns() {
 		return {
 			Vector4(data[0], data[1], data[2], data[3]),
@@ -87,7 +141,7 @@ public:
 		return result;
 	}
 
-	Vector4 operator*(Vector4 &other) {
+	Vector4 operator*(Vector4 other) {
 		Vector4 scaled[4];
 		auto cols = columns();
 		for (int i = 0; i < cols.size(); i++) {
@@ -103,6 +157,25 @@ public:
 			x[1] + y[1] + z[1] + w[1],
 			x[2] + y[2] + z[2] + w[2],
 			x[3] + y[3] + z[3] + w[3]
+		);
+	}
+
+	Vector3 operator*(Vector3 other) {
+		Vector4 vec = *this * Vector4(other[0], other[1], other[2], 0.0);
+		return Vector3(
+			vec.x(),
+			vec.y(),
+			vec.z()
+		);
+	}
+
+	Point3 operator*(Point3 other) {
+		Vector4 vec = *this * Vector4(other[0], other[1], other[2], 1.0);
+		float w = vec.w();
+		return Point3(
+			vec.x() / w,
+			vec.y() / w,
+			vec.z() / w
 		);
 	}
 

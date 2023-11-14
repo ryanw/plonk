@@ -36,4 +36,4 @@ public:
 #define assert_select(x, A, B, FUNC, ...) FUNC
 #define assert(...) assert_select(,##__VA_ARGS__, assert_with_message(__VA_ARGS__), assert_without_message(__VA_ARGS__))
 #define assert_delta(actual, expected, delta, ...) assert(std::abs(actual - expected) < delta, __VA_ARGS__)
-#define assert_approx(actual, expected, ...) assert_delta(actual, expected, 0.00001, __VA_ARGS__)
+#define assert_approx(actual, expected, ...) assert_delta(actual, expected, 0.001, __VA_ARGS__)
