@@ -1,6 +1,7 @@
 #include "vectors.h"
 #include <array>
 #include <cstring>
+#include <optional>
 
 class Matrix4 {
 public:
@@ -14,10 +15,10 @@ public:
 	}
 
 	Matrix4() {}
-	Matrix4(Matrix4 &other) {
+	Matrix4(const Matrix4 &other) {
 		std::memcpy(data, other.data, sizeof(other.data));
 	}
-	Matrix4(Matrix4 *other) {
+	Matrix4(const Matrix4 *other) {
 		std::memcpy(data, other->data, sizeof(other->data));
 	}
 
@@ -102,7 +103,7 @@ public:
 		return mat;
 	}
 
-	std::array<Vector4, 4> columns() {
+	std::array<Vector4, 4> columns() const {
 		return {
 			Vector4(data[0], data[1], data[2], data[3]),
 			Vector4(data[4], data[5], data[6], data[7]),
@@ -112,7 +113,7 @@ public:
 	}
 
 
-	std::array<Vector4, 4> rows() {
+	std::array<Vector4, 4> rows() const {
 		return {
 			Vector4(data[0], data[4], data[8], data[12]),
 			Vector4(data[1], data[5], data[9], data[13]),
@@ -121,7 +122,124 @@ public:
 		};
 	}
 
-	Matrix4 operator*(Matrix4 &other) {
+	float determinant() const {
+		float m00 = data[0],
+			m01 = data[1],
+			m02 = data[2],
+			m03 = data[3],
+			m10 = data[4],
+			m11 = data[5],
+			m12 = data[6],
+			m13 = data[7],
+			m20 = data[8],
+			m21 = data[9],
+			m22 = data[10],
+			m23 = data[11],
+			m30 = data[12],
+			m31 = data[13],
+			m32 = data[14],
+			m33 = data[15];
+
+		float det =
+			(m00 * m11 * m22 * m33) -
+			(m00 * m11 * m23 * m32) +
+			(m00 * m12 * m23 * m31) -
+			(m00 * m12 * m21 * m33) +
+
+			(m00 * m13 * m21 * m32) -
+			(m00 * m13 * m22 * m31) -
+			(m01 * m12 * m23 * m30) +
+			(m01 * m12 * m20 * m33) -
+
+			(m01 * m13 * m20 * m32) +
+			(m01 * m13 * m22 * m30) -
+			(m01 * m10 * m22 * m33) +
+			(m01 * m10 * m23 * m32) +
+
+			(m02 * m13 * m20 * m31) -
+			(m02 * m13 * m21 * m30) +
+			(m02 * m10 * m21 * m33) -
+			(m02 * m10 * m23 * m31) +
+
+			(m02 * m11 * m23 * m30) -
+			(m02 * m11 * m20 * m33) -
+			(m03 * m10 * m21 * m32) +
+			(m03 * m10 * m22 * m31) -
+
+			(m03 * m11 * m22 * m30) +
+			(m03 * m11 * m20 * m32) -
+			(m03 * m12 * m20 * m31) +
+			(m03 * m12 * m21 * m30);
+
+		return det;
+	}
+
+	std::optional<Matrix4> inverse() const {
+		Matrix4 mat = Matrix4::identity();
+		float det = determinant();
+		if (det == 0.0) return std::nullopt;
+
+		float d = 1.0 / det;
+
+		float b0 = (data[2] * data[7]) - (data[6] * data[3]);
+		float b1 = (data[2] * data[11]) - (data[10] * data[3]);
+		float b2 = (data[14] * data[3]) - (data[2] * data[15]);
+		float b3 = (data[6] * data[11]) - (data[10] * data[7]);
+		float b4 = (data[14] * data[7]) - (data[6] * data[15]);
+		float b5 = (data[10] * data[15]) - (data[14] * data[11]);
+
+		float a0 = (data[0] * data[5]) - (data[4] * data[1]);
+		float a1 = (data[0] * data[9]) - (data[8] * data[1]);
+		float a2 = (data[12] * data[1]) - (data[0] * data[13]);
+		float a3 = (data[4] * data[9]) - (data[8] * data[5]);
+		float a4 = (data[12] * data[5]) - (data[4] * data[13]);
+		float a5 = (data[8] * data[13]) - (data[12] * data[9]);
+
+		float d11 = (data[5] * b5) + (data[9] * b4) + (data[13] * b3);
+		float d12 = (data[1] * b5) + (data[9] * b2) + (data[13] * b1);
+		float d13 = (data[1] * -b4) + (data[5] * b2) + (data[13] * b0);
+		float d14 = (data[1] * b3) + (data[5] * -b1) + (data[9] * b0);
+
+		float d21 = (data[4] * b5) + (data[8] * b4) + (data[12] * b3);
+		float d22 = (data[0] * b5) + (data[8] * b2) + (data[12] * b1);
+		float d23 = (data[0] * -b4) + (data[4] * b2) + (data[12] * b0);
+		float d24 = (data[0] * b3) + (data[4] * -b1) + (data[8] * b0);
+
+		float d31 = (data[7] * a5) + (data[11] * a4) + (data[15] * a3);
+		float d32 = (data[3] * a5) + (data[11] * a2) + (data[15] * a1);
+		float d33 = (data[3] * -a4) + (data[7] * a2) + (data[15] * a0);
+		float d34 = (data[3] * a3) + (data[7] * -a1) + (data[11] * a0);
+
+		float d41 = (data[6] * a5) + (data[10] * a4) + (data[14] * a3);
+		float d42 = (data[2] * a5) + (data[10] * a2) + (data[14] * a1);
+		float d43 = (data[2] * -a4) + (data[6] * a2) + (data[14] * a0);
+		float d44 = (data[2] * a3) + (data[6] * -a1) + (data[10] * a0);
+
+		mat[0] = d11 * d;
+		mat[4] = -(d21 * d);
+		mat[8] = d31 * d;
+		mat[12] = -(d41 * d);
+
+		mat[1] = -(d12 * d);
+		mat[5] = d22 * d;
+		mat[9] = -(d32 * d);
+		mat[13] = d42 * d;
+
+		mat[2] = d13 * d;
+		mat[6] = -(d23 * d);
+		mat[10] = d33 * d;
+		mat[14] = -(d43 * d);
+
+		mat[3] = -(d14 * d);
+		mat[7] = d24 * d;
+		mat[11] = -(d34 * d);
+		mat[15] = d44 * d;
+
+
+		return std::optional(mat);
+	}
+
+	Matrix4 operator*(Matrix4 &other) const {
 		Matrix4 result(this);
 		auto other_cols = other.columns();
 		std::array<Vector4, 4> scaled_cols = {
@@ -141,7 +259,7 @@ public:
 		return result;
 	}
 
-	Vector4 operator*(Vector4 other) {
+	Vector4 operator*(Vector4 other) const {
 		Vector4 scaled[4];
 		auto cols = columns();
 		for (int i = 0; i < cols.size(); i++) {
@@ -160,7 +278,7 @@ public:
 		);
 	}
 
-	Vector3 operator*(Vector3 other) {
+	Vector3 operator*(Vector3 other) const {
 		Vector4 vec = *this * Vector4(other[0], other[1], other[2], 0.0);
 		return Vector3(
 			vec.x(),
@@ -169,7 +287,7 @@ public:
 		);
 	}
 
-	Point3 operator*(Point3 other) {
+	Point3 operator*(Point3 other) const {
 		Vector4 vec = *this * Vector4(other[0], other[1], other[2], 1.0);
 		float w = vec.w();
 		return Point3(
@@ -179,7 +297,11 @@ public:
 		);
 	}
 
-	float operator[](int index) {
+	float &operator[](int index) {
+		return data[index];
+	}
+
+	const float &operator[](int index) const {
 		return data[index];
 	}
 

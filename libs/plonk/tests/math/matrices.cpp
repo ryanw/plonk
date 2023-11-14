@@ -99,4 +99,37 @@ describe(math_matrices, {
 			assert_approx(result[i], expected[i]);
 		}
 	});
+
+	it("calculates the determinant", {
+		Matrix4 mat(
+			3, 7, 2, 3,
+			3, 1, 3, 5,
+			5, 4, 2, 0,
+			8, 5, 1, 1
+		);
+
+		float det = mat.determinant();
+		assert_approx(det, 356.0);
+	});
+
+	it("calculates the inverse matrix", {
+		Matrix4 mat(
+			3, 7, 2, 3,
+			3, 1, 3, 5,
+			5, 4, 2, 0,
+			8, 5, 1, 1
+		);
+
+		Matrix4 expected(
+			-0.112, 0.033, -0.022, 0.168,
+			0.179, -0.103, -0.014, -0.019,
+			-0.078, 0.123, 0.584, -0.382,
+			0.078, 0.126, -0.334, 0.132
+		);
+
+		Matrix4 result = mat.inverse().value();
+		for (int i = 0; i < 16; i++) {
+			assert_approx(result[i], expected[i]);
+		}
+	});
 });
