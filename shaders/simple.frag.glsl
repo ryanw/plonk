@@ -1,7 +1,7 @@
 #version 450
 #define MAX_STEPS 256
 #define MAX_DIST 1024.0
-#define SURFACE_DIST 0.02
+#define SURFACE_DIST 0.01
 
 layout(push_constant)
 	uniform _ {

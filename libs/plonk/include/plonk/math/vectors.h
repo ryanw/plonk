@@ -18,6 +18,12 @@ public:
 		process_constructor_arg(0, first, rest...);
 	};
 
+	BaseVector(const float v[Size]) : BaseVector<Size, Derived>() {
+		for (int i = 0; i < Size; i++) {
+			this->coords[i] = v[i];
+		}
+	}
+
 	BaseVector() {
 		for (int i = 0; i < Size; i++) {
 			coords[i] = 0.0;
@@ -111,6 +117,13 @@ public:
 		return vec;
 	}
 
+	BaseVector<Size, Derived> &operator*=(float amount) {
+		for (int i = 0; i < Size; i++) {
+			coords[i] *= amount;
+		}
+		return *this;
+	}
+
 private:
 	template <typename... Args>
 	void process_constructor_arg(int index, float first, Args... rest) {
@@ -122,10 +135,14 @@ private:
 };
 
 template <std::size_t Size>
+class Point;
+template <std::size_t Size>
 class Vector : public BaseVector<Size, Vector<Size>> {
 public:
 	template <typename... Args>
 	Vector(Args... args) : BaseVector<Size, Vector<Size>>(args...) {}
+	Vector(const Point<Size> p) : BaseVector<Size, Vector<Size>>(p.coords) {}
+	Vector(const Vector<Size> &v) : BaseVector<Size, Vector<Size>>(v.coords) {}
 };
 
 template <std::size_t Size>
@@ -133,6 +150,8 @@ class Point : public BaseVector<Size, Point<Size>> {
 public:
 	template <typename... Args>
 	Point(Args... args) : BaseVector<Size, Point<Size>>(args...) {}
+	Point(const Vector<Size> v) : BaseVector<Size, Point<Size>>(v.coords) {}
+	Point(const Point<Size> &p) : BaseVector<Size, Point<Size>>(p.coords) {}
 };
 
 typedef Vector<2> Vector2;

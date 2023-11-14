@@ -23,7 +23,7 @@ public:
 		std::cerr << "\x1b[48;5;47m\x1b[38;5;0m PASS \x1b[0m " << name << "\n"; \
 	} \
 	catch(const std::exception &e) { \
-		std::cerr << "\x1b[48;5;196m\x1b[38;5;0m FAIL \x1b[0m " << name << "\n"; \
+		std::cerr << "\x1b[48;5;196m\x1b[38;5;0m FAIL \x1b[0m " << name << " -- " << e.what() << "\n"; \
 		__test_failed = true; \
 	} \
 

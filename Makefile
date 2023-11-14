@@ -31,4 +31,4 @@ watch-tests: compile
 test: compile
 	cd build ;\
 	make test || \
-	cat Testing/Temporary/LastTest.log
+	cat Testing/Temporary/LastTest.log | grep -i FAIL

@@ -14,21 +14,19 @@ void Camera::set_direction(Vector3 direction) {
 }
 
 void Camera::rotate(float x, float y) {
-	auto angle = y;
-	auto new_x = direction.coords[0] * std::cos(angle) - direction.coords[2] * std::sin(angle);
-	auto new_y = direction.coords[0] * std::sin(angle) + direction.coords[2] * std::cos(angle);
-	direction = Vector3(new_x, direction.coords[1], new_y).normalize();
-
-	angle = x;
-	new_x = direction.coords[1] * std::cos(angle) - direction.coords[2] * std::sin(angle);
-	new_y = direction.coords[1] * std::sin(angle) + direction.coords[2] * std::cos(angle);
-	direction = Vector3(direction.coords[0], new_x, new_y).normalize();
-
+	auto transform = Matrix4::identity();
+	auto look_at = Matrix4::look_at(direction);
+	transform *= look_at;
+	transform *= Matrix4::from_rotation(x, y, 0.0);
+	transform *= look_at.inverse().value();
+	direction = transform * direction;
 }
 
 void Camera::translate(float x, float y, float z) {
-	position = position + direction * z;
-	//position.coords[0] += x * direction.coords[0];
-	//position.coords[1] += y * direction.coords[1];
-	//position.coords[2] += z * direction.coords[2];
+	auto transform = Matrix4::identity();
+	auto look_at = Matrix4::look_at(direction);
+	transform *= look_at;
+	transform *= Matrix4::from_translation(x, y, z);
+	transform *= look_at.inverse().value();
+	position = transform * position;
 }

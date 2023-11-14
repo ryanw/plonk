@@ -1,3 +1,5 @@
+#pragma once
+
 #include "vectors.h"
 #include <array>
 #include <cstring>
@@ -101,6 +103,31 @@ public:
 		);
 
 		return mat;
+	}
+
+	static Matrix4 look_at(Point3 eye, Point3 at) {
+		Vector3 up(0.0, 1.0, 0.0);
+		Vector3 zaxis = (eye - at).normalize();
+		Vector3 xaxis = zaxis.cross(up).normalize();
+		Vector3 yaxis = xaxis.cross(zaxis).normalize();
+		zaxis *= -1.0;
+
+		Matrix4 mat(
+			xaxis.x(), xaxis.y(), xaxis.z(), -xaxis.dot(eye),
+			yaxis.x(), yaxis.y(), yaxis.z(), -yaxis.dot(eye),
+			zaxis.x(), zaxis.y(), zaxis.z(), -zaxis.dot(eye),
+			0.0, 0.0, 0.0, 1.0
+		);
+
+		return mat;
+	}
+
+	static Matrix4 look_at(Vector3 v) {
+		return look_at(Vector3(0.0, 0.0, 0.0), v);
+	}
+
+	static Matrix4 look_at(Point3 p) {
+		return look_at(Vector(p));
 	}
 
 	std::array<Vector4, 4> columns() const {
@@ -239,7 +266,12 @@ public:
 		return std::optional(mat);
 	}
 
-	Matrix4 operator*(Matrix4 &other) const {
+	Matrix4 &operator*=(const Matrix4 &other) {
+		*this = *this * other;
+		return *this;
+	}
+
+	Matrix4 operator*(const Matrix4 &other) const {
 		Matrix4 result(this);
 		auto other_cols = other.columns();
 		std::array<Vector4, 4> scaled_cols = {

@@ -34,8 +34,9 @@ int main(int, char **) {
 	Point2 prev_mouse_pos;
 	window.on_mouse_move([&](auto position) {
 		auto d = prev_mouse_pos - position;
+		float mouse_speed = 800.0;
 		if (window.is_mouse_grabbed()) {
-			camera.rotate(d.y() / 500.0, d.x() / 500.0);
+			camera.rotate(d.y() / mouse_speed, d.x() / -mouse_speed);
 		}
 		prev_mouse_pos = position;
 	});
