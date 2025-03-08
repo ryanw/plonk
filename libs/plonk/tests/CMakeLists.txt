@@ -1,18 +1,16 @@
 project(plonk_tests)
 
-create_test_sourcelist(TestFiles
-	TestSuite.cpp
+set(TestsToRun 
 	math/vectors.cpp
 	math/matrices.cpp
 )
+create_test_sourcelist(TestFiles TestSuite.cpp ${TestsToRun})
 
 add_executable(TestSuite ${TestFiles})
 target_link_libraries(TestSuite
 	PRIVATE
 		libs::plonk
 )
-set(TestsToRun ${TestFiles})
-remove(TestsToRun TestSuite.cpp)
 
 foreach (TestFilename ${TestsToRun})
 	get_filename_component(DirName ${TestFilename} DIRECTORY)
