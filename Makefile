@@ -13,8 +13,8 @@ compile: compile-shaders
 	make
 
 compile-shaders:
-	glslc -fshader-stage=frag shaders/simple.frag.glsl -o shaders/simple.frag.spv
-	glslc -fshader-stage=vert shaders/simple.vert.glsl -o shaders/simple.vert.spv
+	glslc --target-spv=spv1.6 --target-env=vulkan1.4 -fshader-stage=frag shaders/simple.frag.glsl -o shaders/simple.frag.spv
+	glslc --target-spv=spv1.6 --target-env=vulkan1.4 -fshader-stage=vert shaders/simple.vert.glsl -o shaders/simple.vert.spv
 
 clean:
 	rm -rf build
