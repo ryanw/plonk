@@ -1,7 +1,6 @@
 #pragma once
 
 #include "context.h"
-#include <chrono>
 
 typedef uint32_t FrameIndex;
 
@@ -11,7 +10,6 @@ public:
 	~Frame();
 
 private:
-	friend Context;
 	friend class Context;
 
 	ContextPtr ctx;

@@ -8,6 +8,11 @@ int main(int, char **) {
 	auto ctx = Context::create();
 	ctx->attach_window(window);
 
+	Mesh cube_mesh;
+
+	Scene scene;
+	scene.add_mesh(cube_mesh);
+
 	Camera camera;
 	camera.set_position(Point3(0.0, -1.0, -12.0));
 	Renderer renderer(ctx);

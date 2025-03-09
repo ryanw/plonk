@@ -3,6 +3,7 @@ project(plonk_tests)
 set(TestsToRun 
 	math/vectors.cpp
 	math/matrices.cpp
+	resource_id.cpp
 )
 create_test_sourcelist(TestFiles TestSuite.cpp ${TestsToRun})
 
@@ -13,7 +14,6 @@ target_link_libraries(TestSuite
 )
 
 foreach (TestFilename ${TestsToRun})
-	get_filename_component(DirName ${TestFilename} DIRECTORY)
-	get_filename_component(TName ${TestFilename} NAME_WE)
-	add_test(NAME ${TName} COMMAND TestSuite "${DirName}/${TName}")
+	string(REPLACE ".cpp" "" TestName ${TestFilename})
+	add_test(NAME ${TestName} COMMAND TestSuite ${TestName})
 endforeach()
