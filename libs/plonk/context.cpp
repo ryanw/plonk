@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -34,8 +35,7 @@ auto load_file(const std::string &filename) -> std::vector<char> {
 	return buffer;
 }
 
-Context::Context() {
-}
+Context::Context() {}
 
 void Context::create_command_pool() {
 	printf("Creating command pool\n");
@@ -110,16 +110,16 @@ auto Context::load_shader(const std::string &filename) -> VkShaderModule {
 	return shader;
 }
 
-void Context::destroy_shader(VkShaderModule shader) { vkDestroyShaderModule(device, shader, nullptr); }
+void Context::destroy_shader(VkShaderModule shader) {
+	vkDestroyShaderModule(device, shader, nullptr);
+}
 
-void Context::attach_window(Window &window) {
+void Context::attach_window(std::shared_ptr<Window> window) {
 	std::cout << "Attaching window\n";
-
-	this->window = &window;
-
+	this->window = window;
 	init_vulkan();
 
-	VkResult result = glfwCreateWindowSurface(instance, window.inner, nullptr, &surface);
+	VkResult result = glfwCreateWindowSurface(instance, window->inner, nullptr, &surface);
 	if (VK_SUCCESS != result) {
 		throw std::runtime_error("Failed to create window surface");
 	}
@@ -130,7 +130,7 @@ void Context::attach_window(Window &window) {
 	}
 	vkGetDeviceQueue(device, present_queue_family_index.value(), 0, &present_queue);
 
-	resize_swapchain(window.width(), window.height());
+	resize_swapchain(window->width(), window->height());
 	create_render_pass();
 	create_command_pool();
 	create_command_buffer();
@@ -198,10 +198,11 @@ auto Context::find_graphics_queue() -> std::optional<uint32_t> {
 	return 0;
 }
 
-
 void Context::init_vulkan() {
+	std::cout << "Initialising Vulkan\n";
 	uint32_t extension_count = 0;
 	auto extension_names = glfwGetRequiredInstanceExtensions(&extension_count);
+
 
 	const std::vector<const char *> validation_layers = {
 		"VK_LAYER_KHRONOS_validation",
@@ -377,7 +378,7 @@ Frame Context::aquire_frame() {
 	vkResetFences(device, 1, &in_flight_fence);
 	uint32_t index;
 	vkAcquireNextImageKHR(device, get_swapchain(), UINT64_MAX, image_available_semaphore, VK_NULL_HANDLE, &index);
-	Frame frame(*this, index);
+	Frame frame(as_shared_ptr(), index);
 	vkResetCommandBuffer(command_buffer, 0);
 	VkCommandBufferBeginInfo begin_info{
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -449,7 +450,6 @@ void Context::present_frame(Frame &frame) {
 	vkQueuePresentKHR(present_queue, &present_info);
 	vkDeviceWaitIdle(device);
 }
-
 
 void Context::create_sync_objects() {
 	printf("Creating sync objects\n");
@@ -545,6 +545,7 @@ void Context::create_render_pass() {
 }
 
 Context::~Context() {
+	std::cout << "Destroying Plonk Context\n";
 	vkDestroyCommandPool(device, command_pool, nullptr);
 	for (auto framebuffer : framebuffers) {
 		vkDestroyFramebuffer(device, framebuffer, nullptr);

@@ -11,10 +11,11 @@ public:
 	~Frame();
 
 private:
+	friend Context;
 	friend class Context;
 
-	Context &ctx;
+	ContextPtr ctx;
 	FrameIndex index;
 
-	Frame(Context &ctx, FrameIndex index);
+	Frame(ContextPtr ctx, FrameIndex index);
 };

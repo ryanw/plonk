@@ -17,25 +17,25 @@ struct SimplePushConstants {
 	float time;
 };
 
-Renderer::Renderer(Context &ctx) : ctx(ctx) {
+Renderer::Renderer(ContextPtr ctx) : ctx(ctx) {
 	std::cout << "Creating Renderer\n";
 	started_at = std::chrono::high_resolution_clock::now();
-	vert_shader = ctx.load_shader("shaders/simple.vert.spv");
-	frag_shader = ctx.load_shader("shaders/simple.frag.spv");
+	vert_shader = ctx->load_shader("shaders/simple.vert.spv");
+	frag_shader = ctx->load_shader("shaders/simple.frag.spv");
 	create_pipeline();
 }
 
 void Renderer::draw(Camera &camera) {
 	handle_resize();
 
-	auto frame = ctx.aquire_frame();
+	auto frame = ctx->aquire_frame();
 	record_commands(camera);
 	frame.present();
 }
 
 void Renderer::handle_resize() {
-	if (ctx.needs_resize()) {
-		ctx.update_swapchain();
+	if (ctx->needs_resize()) {
+		ctx->update_swapchain();
 	}
 }
 
@@ -56,22 +56,22 @@ void Renderer::create_pipeline() {
 		.pPushConstantRanges = &push_constant_range,
 	};
 
-	if (VK_SUCCESS != vkCreatePipelineLayout(ctx.device, &pipeline_layout_info, nullptr, &pipeline_layout)) {
+	if (VK_SUCCESS != vkCreatePipelineLayout(ctx->device, &pipeline_layout_info, nullptr, &pipeline_layout)) {
 		throw std::runtime_error("Failed to create Pipeline Layout");
 	}
 
 	VkViewport viewport{
 		.x = 0.0f,
 		.y = 0.0f,
-		.width = ctx.width(),
-		.height = ctx.height(),
+		.width = ctx->width(),
+		.height = ctx->height(),
 		.minDepth = 0.0f,
 		.maxDepth = 1.0f,
 	};
 
 	VkRect2D scissor{
 		.offset = {0, 0},
-		.extent = ctx.size(),
+		.extent = ctx->size(),
 	};
 
 	VkPipelineViewportStateCreateInfo viewport_state{
@@ -184,21 +184,21 @@ void Renderer::create_pipeline() {
 		.basePipelineIndex = -1,
 	};
 
-	pipeline = ctx.create_graphics_pipeline(&pipeline_info);
+	pipeline = ctx->create_graphics_pipeline(&pipeline_info);
 
 	std::cout << "Created Pipeline\n";
 }
 
 void Renderer::record_commands(Camera &camera) {
-	ctx.bind_pipeline(pipeline);
+	ctx->bind_pipeline(pipeline);
 
-	auto &command_buffer = ctx.command_buffer;
+	auto &command_buffer = ctx->command_buffer;
 
 	VkViewport viewport{
 		.x = 0.0f,
 		.y = 0.0f,
-		.width = ctx.width(),
-		.height = ctx.height(),
+		.width = ctx->width(),
+		.height = ctx->height(),
 		.minDepth = 0.0f,
 		.maxDepth = 1.0f,
 	};
@@ -206,7 +206,7 @@ void Renderer::record_commands(Camera &camera) {
 
 	VkRect2D scissor{
 		.offset = {0, 0},
-		.extent = ctx.size(),
+		.extent = ctx->size(),
 	};
 	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
@@ -224,8 +224,8 @@ void Renderer::record_commands(Camera &camera) {
 }
 
 Renderer::~Renderer() {
-	vkDestroyPipeline(ctx.device, pipeline, nullptr);
-	vkDestroyPipelineLayout(ctx.device, pipeline_layout, nullptr);
-	ctx.destroy_shader(vert_shader);
-	ctx.destroy_shader(frag_shader);
+	vkDestroyPipeline(ctx->device, pipeline, nullptr);
+	vkDestroyPipelineLayout(ctx->device, pipeline_layout, nullptr);
+	ctx->destroy_shader(vert_shader);
+	ctx->destroy_shader(frag_shader);
 }

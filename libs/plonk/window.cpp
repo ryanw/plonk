@@ -140,4 +140,7 @@ bool Window::is_mouse_grabbed() {
 	return mode == GLFW_CURSOR_DISABLED;
 }
 
-Window::~Window() { glfwTerminate(); }
+Window::~Window() {
+	std::cout << "Terminating GLFW window\n";
+	glfwTerminate();
+}

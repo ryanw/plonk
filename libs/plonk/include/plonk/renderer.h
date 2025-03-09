@@ -6,12 +6,12 @@
 
 class Renderer {
 public:
-	Renderer(Context &ctx);
+	Renderer(ContextPtr ctx);
 	~Renderer();
 	void draw(Camera &camera);
 
 private:
-	Context &ctx;
+	ContextPtr ctx;
 	VkShaderModule vert_shader;
 	VkShaderModule frag_shader;
 	VkPipeline pipeline;

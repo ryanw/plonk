@@ -1,6 +1,7 @@
 #pragma once
 
 #include "window.h"
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -8,8 +9,11 @@
 
 typedef uint32_t FrameIndex;
 class Frame;
+class Context;
 
-class Context {
+using ContextPtr = std::shared_ptr<Context>;
+
+class Context : public std::enable_shared_from_this<Context> {
 public:
 	VkDevice device;
 	VkQueue graphics_queue;
@@ -17,9 +21,14 @@ public:
 	// FIXME make private
 	VkCommandBuffer command_buffer = VK_NULL_HANDLE;
 
-	Context();
 	~Context();
-	void attach_window(Window &window);
+	static std::shared_ptr<Context> create() {
+		return std::shared_ptr<Context>(new Context());
+	}
+	ContextPtr as_shared_ptr() {
+		return shared_from_this();
+	}
+	void attach_window(std::shared_ptr<Window> window);
 	VkShaderModule load_shader(const std::string &filename);
 	void destroy_shader(VkShaderModule shader);
 	float width() { return extent.width; };
@@ -42,16 +51,23 @@ public:
 	VkPipeline create_graphics_pipeline(VkGraphicsPipelineCreateInfo *pipeline_info);
 	void bind_pipeline(VkPipeline &pipeline);
 
+	// Prevent copies
+	Context(const Context &) = delete;
+	Context &operator=(const Context &) = delete;
+	Context(Context &&) noexcept = default;
+	Context &operator=(Context &&) noexcept = default;
+
 private:
 	friend class Frame;
 
+	Context();
 	VkInstance instance = VK_NULL_HANDLE;
 	VkPhysicalDevice physical_device = VK_NULL_HANDLE;
 	VkSurfaceKHR surface = VK_NULL_HANDLE;
 	VkSwapchainKHR swapchain = VK_NULL_HANDLE;
 	VkSurfaceFormatKHR surface_format;
 	VkExtent2D extent;
-	Window* window = nullptr;
+	std::shared_ptr<Window> window = nullptr;
 	VkSemaphore image_available_semaphore = VK_NULL_HANDLE;
 	VkSemaphore render_finished_semaphore = VK_NULL_HANDLE;
 	VkFence in_flight_fence = VK_NULL_HANDLE;
