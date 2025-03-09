@@ -1,4 +1,4 @@
-.PHONY: all format compile clean
+.PHONY: all format compile clean docs
 
 all: compile
 
@@ -32,3 +32,6 @@ test: compile
 	cd build ;\
 	make test || \
 	cat Testing/Temporary/LastTest.log | grep -i FAIL
+
+docs:
+	doxygen Doxyfile
